@@ -9,3 +9,6 @@ htmlcov/
 .ruff_cache/
 .workbench/
 site/
+
+# a global ignore may list this directory; the plugin manifests must be tracked
+!.claude-plugin/

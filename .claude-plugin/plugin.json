@@ -1,0 +1,19 @@
+{
+  "name": "agent-workbench",
+  "version": "0.1.0",
+  "description": "Human-in-the-loop kit for long agent jobs: review pages with ticks and comments the agent reads live, a news panel, remote review over ssh, and job hygiene (memory governor, network pacing, resumable queue).",
+  "author": {
+    "name": "Khalid Benjelloun"
+  },
+  "homepage": "https://github.com/kmbenjel/agent-workbench",
+  "repository": "https://github.com/kmbenjel/agent-workbench",
+  "license": "MIT",
+  "keywords": [
+    "review",
+    "human-in-the-loop",
+    "monitor",
+    "mcp",
+    "long-running-jobs"
+  ],
+  "icon": "./.claude-plugin/icon.png"
+}

@@ -1,0 +1,15 @@
+{
+  "name": "agent-workbench",
+  "owner": {
+    "name": "Khalid Benjelloun"
+  },
+  "plugins": [
+    {
+      "name": "agent-workbench",
+      "source": "./",
+      "description": "Review pages with ticks and comments that the agent reads live; news panel; remote review over ssh; memory governor, network pacing, resumable queue.",
+      "version": "0.1.0"
+    }
+  ],
+  "description": "Human-in-the-loop review pages, remote review and job hygiene for long AI-agent jobs."
+}
