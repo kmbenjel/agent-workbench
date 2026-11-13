@@ -215,7 +215,7 @@ python bench/compare.py        # the install/footprint comparison (run it on a V
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) and [CHANGELOG.md](CHANGELOG.md). Arabic documentation:
 [warraq.benjelloun.dev/agent-workbench](https://warraq.benjelloun.dev/agent-workbench/) (source in
-[`docs/ar/`](docs/ar/index.md)). Part of **[Warraq](https://warraq.benjelloun.dev)** (الورّاق), open tools for Arabic libraries.
+[`docs/ar/`](docs/ar/index.md)). Part of **[Warraq](https://warraq.benjelloun.dev)** (الورّاق), open tools for digital heritage libraries.
 
 ## Licence
 
