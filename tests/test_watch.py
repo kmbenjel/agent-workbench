@@ -1,4 +1,10 @@
 import json
+import os
+import select
+import subprocess
+import sys
+
+import pytest
 
 from agent_workbench import store
 from agent_workbench.watch import Watcher, format_line, run
@@ -97,3 +103,33 @@ def test_format_and_run(tmp_path):
     lines, ticks = [], iter([False, True])
     run(w, lines.append, interval=0, sleep=lambda s: None, stop=lambda: next(ticks))
     assert lines == ["REMARK r a verdict=approve"]
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="select() on a pipe needs POSIX")
+def test_watch_lines_cross_a_pipe_at_once(tmp_path):
+    """A Monitor reads a pipe: each remark must arrive when it settles, not when a buffer fills."""
+    ws = tmp_path / ".workbench"
+    ws.mkdir()
+    add(ws / "remarks.jsonl", "a", "reject", "keep it")
+    p = subprocess.Popen(
+        [
+            sys.executable,
+            "-m",
+            "agent_workbench",
+            "--root",
+            str(tmp_path),
+            "watch",
+            "--from-start",
+            "--settle",
+            "0",
+        ],
+        stdout=subprocess.PIPE,
+        env={**os.environ, "PYTHONUNBUFFERED": ""},
+    )
+    try:
+        ready, _, _ = select.select([p.stdout], [], [], 20)
+        assert ready, "no line reached the pipe while the watcher was still running"
+        assert p.stdout.readline().decode().strip() == "REMARK r a verdict=reject «keep it»"
+    finally:
+        p.kill()
+        p.wait()

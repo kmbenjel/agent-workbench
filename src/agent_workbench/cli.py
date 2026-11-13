@@ -212,7 +212,8 @@ def dispatch(a: argparse.Namespace, cfg: Config) -> int:
                 print(json.dumps(r, ensure_ascii=False) if a.json else format_line(r))
             return 0
         try:
-            run(w, print, a.json, cfg.review.poll_seconds)
+            # flushed line by line: a Monitor or a `| while read` loop reads a pipe, not a terminal
+            run(w, lambda line: print(line, flush=True), a.json, cfg.review.poll_seconds)
         except KeyboardInterrupt:
             pass
     elif cmd == "remarks":
