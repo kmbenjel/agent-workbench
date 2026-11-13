@@ -207,14 +207,15 @@ template ([examples/workbench.toml](examples/workbench.toml)).
 ## Development
 
 ```bash
-make install && make test      # 123 tests, 88 % line+branch coverage, about 5 s
+make install && make test      # 124 tests, 88 % line+branch coverage, about 5 s
 make demo                      # the demo, served
 make media                     # regenerate the recording (Chrome + ffmpeg + ImageMagick; run it on a VM)
 python bench/compare.py        # the install/footprint comparison (run it on a VM)
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) and [CHANGELOG.md](CHANGELOG.md). Arabic documentation:
-[`docs/ar/`](docs/ar/index.md). Part of the **Warraq** family of tools (`benjelloun.dev/warraq`).
+[warraq.benjelloun.dev/agent-workbench](https://warraq.benjelloun.dev/agent-workbench/) (source in
+[`docs/ar/`](docs/ar/index.md)). Part of **[Warraq](https://warraq.benjelloun.dev)** (الورّاق), open tools for Arabic libraries.
 
 ## Licence
 

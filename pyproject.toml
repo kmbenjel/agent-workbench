@@ -34,7 +34,7 @@ agent-workbench = "agent_workbench.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/kmbenjel/agent-workbench"
-Documentation = "https://benjelloun.dev/warraq"
+Documentation = "https://warraq.benjelloun.dev/agent-workbench/"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/agent_workbench"]
