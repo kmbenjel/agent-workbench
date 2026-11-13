@@ -24,8 +24,12 @@ function applyFilter() {
   $$('.filters button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.f === flt)));
 }
 $$('.filters button').forEach(b => b.onclick = () => { flt = b.dataset.f; applyFilter(); });
+const LS = 'awb:' + R + ':';
+const mem = { get(k) { try { return JSON.parse(localStorage.getItem(LS + k) || 'null'); } catch (e) { return null; } },
+              set(k, v) { try { localStorage.setItem(LS + k, JSON.stringify(v)); } catch (e) { /* private mode */ } } };
 function save(a) {
-  if (!live) return; const st = $('.st', a); st.textContent = L.saving;
+  if (!live) { mem.set(a.dataset.card, {verdict: a.dataset.verdict || '', comment: $('textarea', a).value}); $('.st', a).textContent = L.local; return; }
+  const st = $('.st', a); st.textContent = L.saving;
   post(R, a.dataset.card, a.dataset.verdict || '', $('textarea', a).value, a.dataset.rev)
     .then(j => st.textContent = L.saved + ' ' + hhmm(j.time)).catch(() => st.textContent = L.failed);
 }
@@ -35,7 +39,12 @@ $$('article').forEach(a => {
   t.addEventListener('input', () => { clearTimeout(tm); tm = setTimeout(() => save(a), 800); });
 });
 async function load() {
-  if (!live) { $('#noserver').hidden = false; return; }
+  if (!live) {
+    $('#noserver').hidden = false;
+    $$('article').forEach(a => { const x = mem.get(a.dataset.card); if (!x) return;
+      a.dataset.verdict = x.verdict || ''; $('textarea', a).value = x.comment || ''; paint(a); });
+    progress(); return;
+  }
   try {
     const d = await (await fetch('api/remarks?report=' + encodeURIComponent(R))).json();
     $$('article').forEach(a => { const x = d[a.dataset.card]; if (!x) return;
@@ -47,9 +56,9 @@ async function load() {
 const esc = s => s.replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
 let typing = false;
 async function news() {
-  if (!live) return;
   try {
-    const [items, rep] = await Promise.all([fetch('api/news').then(r => r.json()), fetch('api/remarks?report=_news').then(r => r.json())]);
+    const [items, rep] = live ? await Promise.all([fetch('api/news').then(r => r.json()), fetch('api/remarks?report=_news').then(r => r.json())])
+                              : [CFG.news || [], Object.fromEntries((CFG.news || []).map(n => [n.id, mem.get('news:' + n.id) || {}]))];
     const box = $('#news'); if (!items.length) { box.hidden = true; return; }
     if (typing) return;
     box.hidden = false;
@@ -58,7 +67,8 @@ async function news() {
       ${n.title ? '<b>' + esc(n.title) + '</b>' : ''}<div>${esc(n.text)}</div>
       ${n.kind === 'question' ? `<textarea rows="2" placeholder="${esc(L.reply)}">${esc((rep[n.id] || {}).comment || '')}</textarea>` : ''}</div>`).join('');
     $$('#newslist textarea').forEach(t => { let tm; const id = t.closest('.item').dataset.id;
-      t.addEventListener('input', () => { typing = true; clearTimeout(tm); tm = setTimeout(() => { post('_news', id, '', t.value, '').then(() => typing = false); }, 800); }); });
+      t.addEventListener('input', () => { typing = true; clearTimeout(tm); tm = setTimeout(() => {
+        if (live) post('_news', id, '', t.value, '').then(() => typing = false); else { mem.set('news:' + id, {comment: t.value}); typing = false; } }, 800); }); });
   } catch (e) { /* the server may be away for a moment */ }
 }
 load(); news(); if (live) setInterval(news, 8000);

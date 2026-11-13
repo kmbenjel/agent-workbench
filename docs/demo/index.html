@@ -1,0 +1,133 @@
+<!doctype html><html lang="en" dir="ltr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>OCR fixes to confirm</title>
+<style>:root{--bg:#f7f7f4;--fg:#1d1f21;--mut:#6a6f76;--card:#fff;--line:#dcdcd5;--acc:#1f6feb;--ok:#1a7f37;--bad:#c62828;--chg:#9a6700;--news:#eef4ff}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#15171a;--fg:#e6e6e3;--mut:#9aa0a6;--card:#1e2125;--line:#33373d;--acc:#6ea8ff;--ok:#56d364;--bad:#ff7b72;--chg:#e3b341;--news:#1b2a40}}
+:root[data-theme="dark"]{--bg:#15171a;--fg:#e6e6e3;--mut:#9aa0a6;--card:#1e2125;--line:#33373d;--acc:#6ea8ff;--ok:#56d364;--bad:#ff7b72;--chg:#e3b341;--news:#1b2a40}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans","Noto Naskh Arabic",sans-serif;margin:0;padding:16px}
+main{max-width:1100px;margin:auto}
+h1{font-size:1.35rem;margin:.2em 0}
+h2{font-size:1.05rem;margin:1.6em 0 .4em;border-bottom:2px solid var(--line);padding-bottom:.2em}
+.mut{color:var(--mut)}
+#bar{position:sticky;top:0;z-index:5;background:var(--bg);padding:8px 0;border-bottom:1px solid var(--line);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+#prog{flex:1;min-width:160px;height:8px;background:var(--line);border-radius:4px;overflow:hidden}
+#prog i{display:block;height:100%;width:0;background:var(--ok);transition:width .3s}
+.filters button{font:inherit;font-size:.85rem;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:14px;padding:2px 10px;cursor:pointer}
+.filters button[aria-pressed="true"]{border-color:var(--acc);color:var(--acc)}
+#news{background:var(--news);border:1px solid var(--line);border-radius:10px;padding:8px 14px;margin:12px 0}
+#news h2{margin:.2em 0;border:0;font-size:1rem}
+#news .item{padding:6px 0;border-top:1px solid var(--line)}
+#news .item:first-of-type{border-top:0}
+#news .kind{font-size:.75rem;text-transform:uppercase;letter-spacing:.04em;border-radius:4px;padding:0 6px;border:1px solid currentColor}
+#news .k-question{color:var(--chg)} #news .k-done{color:var(--ok)} #news .k-info{color:var(--acc)}
+#news textarea{margin-top:4px}
+article{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:12px 0;border-inline-start:5px solid var(--line)}
+article.approved{border-inline-start-color:var(--ok)} article.rejected{border-inline-start-color:var(--bad)} article.changed{border-inline-start-color:var(--chg)}
+.head{display:flex;gap:10px;align-items:baseline}
+.n{color:var(--mut);min-width:2.2em;font-weight:600}
+.title{font-weight:600;word-break:break-word}
+.why{color:var(--acc);margin:.2em 0}
+.body p{margin:.3em 0;white-space:pre-wrap;word-break:break-word}
+.badge{font-size:.78rem;color:var(--chg);border:1px solid var(--chg);border-radius:4px;padding:0 6px}
+.pics{display:flex;gap:6px;overflow-x:auto;margin:8px 0}
+.pics img{max-height:var(--ih,260px);border:1px solid var(--line);background:#fff;border-radius:4px}
+.act{display:flex;gap:8px;align-items:flex-start;margin-top:8px;flex-wrap:wrap}
+.act button{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:8px;padding:4px 14px;cursor:pointer}
+.act button.yes[aria-pressed="true"]{background:var(--ok);border-color:var(--ok);color:#fff}
+.act button.no[aria-pressed="true"]{background:var(--bad);border-color:var(--bad);color:#fff}
+textarea{flex:1;min-width:200px;font:inherit;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:6px;width:100%}
+.st{color:var(--mut);font-size:.8rem}
+.warn{background:#fff3cd;color:#5c4400;padding:8px 12px;border-radius:8px}
+</style></head><body style="--ih:260px"><main>
+<h1>OCR fixes to confirm</h1><p class="mut">An agent cleaned the OCR of a public-domain novel and is unsure about these seven lines. Approve what is right, reject what is wrong, and say why in the box: the agent reads it.</p>
+<p class="warn" id="noserver" hidden>Not connected to a review server (awb serve): your ticks and comments stay in this browser only.</p>
+<div id="bar"><span id="count" class="mut"></span><div id="prog"><i></i></div>
+<span class="filters"><button data-f="all" aria-pressed="true">All</button> <button data-f="open">Open</button>
+<button data-f="approve">Approved</button> <button data-f="reject">Rejected</button></span></div>
+<section id="news" hidden><h2>News from the agent</h2><div id="newslist"></div></section>
+<h2>Proposed fixes <span class="mut">(7)</span></h2>
+<article data-card="line-1" data-rev="bb57dab669" class="open"><div class="head"><span class="n">1</span><div><div class="title">universaily  →  universally</div><div class="mut">line 1 of 7 · confidence 0.62</div><div class="why">a l / a i confusion at the end of the word</div></div></div><div class="body"><p>OCR read:  universaily</p><p>Proposed:  universally</p></div><div class="pics"><a href="ocr-fixes/9ba3e8d8-1.svg" target="_blank" rel="noopener"><img loading="lazy" src="ocr-fixes/9ba3e8d8-1.svg" alt=""></a></div><div class="act"><button class="yes" data-v="approve" aria-pressed="false">Approve</button><button class="no" data-v="reject" aria-pressed="false">Reject</button><textarea rows="2" placeholder="Comment (optional)"></textarea><span class="st"></span></div></article>
+<article data-card="line-2" data-rev="1393f5b5d4" class="open"><div class="head"><span class="n">2</span><div><div class="title">neighbourbood  →  neighbourhood</div><div class="mut">line 2 of 7 · confidence 0.58</div><div class="why">the h of the second syllable looks like b</div></div></div><div class="body"><p>OCR read:  neighbourbood</p><p>Proposed:  neighbourhood</p></div><div class="pics"><a href="ocr-fixes/fe0c3e27-1.svg" target="_blank" rel="noopener"><img loading="lazy" src="ocr-fixes/fe0c3e27-1.svg" alt=""></a></div><div class="act"><button class="yes" data-v="approve" aria-pressed="false">Approve</button><button class="no" data-v="reject" aria-pressed="false">Reject</button><textarea rows="2" placeholder="Comment (optional)"></textarea><span class="st"></span></div></article>
+<article data-card="line-3" data-rev="0379b7946c" class="open"><div class="head"><span class="n">3</span><div><div class="title">Netherfleld  →  Netherfield</div><div class="mut">line 3 of 7 · confidence 0.71</div><div class="why">a place name: the catalogue has Netherfield</div></div></div><div class="body"><p>OCR read:  Netherfleld</p><p>Proposed:  Netherfield</p></div><div class="pics"><a href="ocr-fixes/0a58f39e-1.svg" target="_blank" rel="noopener"><img loading="lazy" src="ocr-fixes/0a58f39e-1.svg" alt=""></a></div><div class="act"><button class="yes" data-v="approve" aria-pressed="false">Approve</button><button class="no" data-v="reject" aria-pressed="false">Reject</button><textarea rows="2" placeholder="Comment (optional)"></textarea><span class="st"></span></div></article>
+<article data-card="line-4" data-rev="52a8e292b2" class="open"><div class="head"><span class="n">4</span><div><div class="title">Bermet  →  Bennet</div><div class="mut">line 4 of 7 · confidence 0.66</div><div class="why">rn / nn</div></div></div><div class="body"><p>OCR read:  Bermet</p><p>Proposed:  Bennet</p></div><div class="pics"><a href="ocr-fixes/c6cada62-1.svg" target="_blank" rel="noopener"><img loading="lazy" src="ocr-fixes/c6cada62-1.svg" alt=""></a></div><div class="act"><button class="yes" data-v="approve" aria-pressed="false">Approve</button><button class="no" data-v="reject" aria-pressed="false">Reject</button><textarea rows="2" placeholder="Comment (optional)"></textarea><span class="st"></span></div></article>
+<article data-card="line-5" data-rev="3f7df18a88" class="open"><div class="head"><span class="n">5</span><div><div class="title">impatient1y  →  impatiently</div><div class="mut">line 5 of 7 · confidence 0.93</div><div class="why">a digit one inside a word</div></div></div><div class="body"><p>OCR read:  impatient1y</p><p>Proposed:  impatiently</p></div><div class="pics"><a href="ocr-fixes/138376bb-1.svg" target="_blank" rel="noopener"><img loading="lazy" src="ocr-fixes/138376bb-1.svg" alt=""></a></div><div class="act"><button class="yes" data-v="approve" aria-pressed="false">Approve</button><button class="no" data-v="reject" aria-pressed="false">Reject</button><textarea rows="2" placeholder="Comment (optional)"></textarea><span class="st"></span></div></article>
+<article data-card="line-6" data-rev="4828a25795" class="open"><div class="head"><span class="n">6</span><div><div class="title">ob]ection  →  objection</div><div class="mut">line 6 of 7 · confidence 0.91</div><div class="why">a bracket where a j was printed</div></div></div><div class="body"><p>OCR read:  ob]ection</p><p>Proposed:  objection</p></div><div class="pics"><a href="ocr-fixes/4e775e2d-1.svg" target="_blank" rel="noopener"><img loading="lazy" src="ocr-fixes/4e775e2d-1.svg" alt=""></a></div><div class="act"><button class="yes" data-v="approve" aria-pressed="false">Approve</button><button class="no" data-v="reject" aria-pressed="false">Reject</button><textarea rows="2" placeholder="Comment (optional)"></textarea><span class="st"></span></div></article>
+<article data-card="line-7" data-rev="242e82ff37" class="open"><div class="head"><span class="n">7</span><div><div class="title">neighbourhood  →  neighborhood</div><div class="mut">line 7 of 7 · confidence 0.31</div><div class="why">a spelling change: only if the whole book is modernised</div></div></div><div class="body"><p>OCR read:  neighbourhood</p><p>Proposed:  neighborhood</p></div><div class="pics"><a href="ocr-fixes/fa3b6347-1.svg" target="_blank" rel="noopener"><img loading="lazy" src="ocr-fixes/fa3b6347-1.svg" alt=""></a></div><div class="act"><button class="yes" data-v="approve" aria-pressed="false">Approve</button><button class="no" data-v="reject" aria-pressed="false">Reject</button><textarea rows="2" placeholder="Comment (optional)"></textarea><span class="st"></span></div></article>
+<p class="mut"></p>
+</main>
+<script type="application/json" id="awb-cfg">{"report": "ocr-fixes", "labels": {"approve": "Approve", "reject": "Reject", "comment": "Comment (optional)", "news": "News from the agent", "reply": "Your answer", "progress": "{done} of {total} reviewed", "all": "All", "open": "Open", "approved": "Approved", "rejected": "Rejected", "saving": "saving…", "saved": "saved", "failed": "not saved", "changed": "changed since your last judgment", "local": "kept in this browser", "kind_info": "info", "kind_question": "question", "kind_done": "done", "no_cards": "Nothing to review. Thank you."}, "news": [{"v": 1, "id": "n913db9", "time": "2026-11-13T01:22:46Z", "kind": "question", "text": "I corrected 212 OCR errors by dictionary and kept these 7 for your eye. Question: should spelling follow the printed edition (British) or be modernised?", "title": "Seven lines to confirm", "card": ""}]}</script>
+<script>const CFG = JSON.parse(document.getElementById('awb-cfg').textContent);
+const L = CFG.labels, R = CFG.report, live = location.protocol.startsWith('http');
+const $ = (s, r) => (r || document).querySelector(s), $$ = (s, r) => [...(r || document).querySelectorAll(s)];
+const post = (report, card, verdict, comment, rev) => fetch('api/remark', {method: 'POST',
+  headers: {'Content-Type': 'application/json'}, body: JSON.stringify({report, card, verdict, comment, rev})}).then(r => r.json());
+const hhmm = t => (t || '').slice(11, 19);
+const fmt = (s, o) => s.replace(/\{(\w+)\}/g, (_, k) => o[k]);
+function state(a) { return a.dataset.verdict === 'approve' ? 'approved' : a.dataset.verdict === 'reject' ? 'rejected' : a.dataset.changed ? 'changed' : 'open'; }
+function paint(a) {
+  a.className = state(a);
+  $$('button', a).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === a.dataset.verdict)));
+  progress();
+}
+function progress() {
+  const all = $$('article'), done = all.filter(a => a.dataset.verdict).length;
+  $('#count').textContent = fmt(L.progress, {done, total: all.length});
+  $('#prog i').style.width = (all.length ? 100 * done / all.length : 100) + '%';
+  applyFilter();
+}
+let flt = 'all';
+function applyFilter() {
+  $$('article').forEach(a => { const s = a.dataset.verdict || 'open';
+    a.hidden = !(flt === 'all' || (flt === 'open' && !a.dataset.verdict) || (flt === 'approve' && s === 'approve') || (flt === 'reject' && s === 'reject')); });
+  $$('.filters button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.f === flt)));
+}
+$$('.filters button').forEach(b => b.onclick = () => { flt = b.dataset.f; applyFilter(); });
+const LS = 'awb:' + R + ':';
+const mem = { get(k) { try { return JSON.parse(localStorage.getItem(LS + k) || 'null'); } catch (e) { return null; } },
+              set(k, v) { try { localStorage.setItem(LS + k, JSON.stringify(v)); } catch (e) { /* private mode */ } } };
+function save(a) {
+  if (!live) { mem.set(a.dataset.card, {verdict: a.dataset.verdict || '', comment: $('textarea', a).value}); $('.st', a).textContent = L.local; return; }
+  const st = $('.st', a); st.textContent = L.saving;
+  post(R, a.dataset.card, a.dataset.verdict || '', $('textarea', a).value, a.dataset.rev)
+    .then(j => st.textContent = L.saved + ' ' + hhmm(j.time)).catch(() => st.textContent = L.failed);
+}
+$$('article').forEach(a => {
+  let tm; const t = $('textarea', a);
+  $$('button', a).forEach(b => b.onclick = () => { a.dataset.verdict = a.dataset.verdict === b.dataset.v ? '' : b.dataset.v; paint(a); save(a); });
+  t.addEventListener('input', () => { clearTimeout(tm); tm = setTimeout(() => save(a), 800); });
+});
+async function load() {
+  if (!live) {
+    $('#noserver').hidden = false;
+    $$('article').forEach(a => { const x = mem.get(a.dataset.card); if (!x) return;
+      a.dataset.verdict = x.verdict || ''; $('textarea', a).value = x.comment || ''; paint(a); });
+    progress(); return;
+  }
+  try {
+    const d = await (await fetch('api/remarks?report=' + encodeURIComponent(R))).json();
+    $$('article').forEach(a => { const x = d[a.dataset.card]; if (!x) return;
+      a.dataset.verdict = x.verdict || ''; $('textarea', a).value = x.comment || '';
+      $('.st', a).textContent = L.saved + ' ' + hhmm(x.time); paint(a); });
+  } catch (e) { $('#noserver').hidden = false; }
+  progress();
+}
+const esc = s => s.replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+let typing = false;
+async function news() {
+  try {
+    const [items, rep] = live ? await Promise.all([fetch('api/news').then(r => r.json()), fetch('api/remarks?report=_news').then(r => r.json())])
+                              : [CFG.news || [], Object.fromEntries((CFG.news || []).map(n => [n.id, mem.get('news:' + n.id) || {}]))];
+    const box = $('#news'); if (!items.length) { box.hidden = true; return; }
+    if (typing) return;
+    box.hidden = false;
+    $('#newslist').innerHTML = items.slice(-6).reverse().map(n => `<div class="item" data-id="${n.id}">
+      <span class="kind k-${n.kind}">${esc(L['kind_' + n.kind] || n.kind)}</span> <span class="mut" dir="ltr" style="unicode-bidi:isolate">${esc(n.time.slice(5, 16).replace('T', ' '))}</span>
+      ${n.title ? '<b>' + esc(n.title) + '</b>' : ''}<div>${esc(n.text)}</div>
+      ${n.kind === 'question' ? `<textarea rows="2" placeholder="${esc(L.reply)}">${esc((rep[n.id] || {}).comment || '')}</textarea>` : ''}</div>`).join('');
+    $$('#newslist textarea').forEach(t => { let tm; const id = t.closest('.item').dataset.id;
+      t.addEventListener('input', () => { typing = true; clearTimeout(tm); tm = setTimeout(() => {
+        if (live) post('_news', id, '', t.value, '').then(() => typing = false); else { mem.set('news:' + id, {comment: t.value}); typing = false; } }, 800); }); });
+  } catch (e) { /* the server may be away for a moment */ }
+}
+load(); news(); if (live) setInterval(news, 8000);
+</script></body></html>

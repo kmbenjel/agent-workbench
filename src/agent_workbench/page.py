@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Any
 
 from .config import Config
-from .store import NEWS_REPORT, card_rev, card_state, latest_closed, latest_remarks
+from .store import NEWS_REPORT, card_rev, card_state, latest_closed, latest_remarks, read_news
 
 LABELS = {
     "approve": "Approve",
@@ -41,7 +41,8 @@ LABELS = {
     "failed": "not saved",
     "changed": "changed since your last judgment",
     "closed": "{n} card(s) already dealt with are hidden.",
-    "noserver": "Comments are saved by the review server. Open this page from it (awb serve), not as a file.",
+    "noserver": "Not connected to a review server (awb serve): your ticks and comments stay in this browser only.",
+    "local": "kept in this browser",
     "kind_info": "info",
     "kind_question": "question",
     "kind_done": "done",
@@ -214,7 +215,9 @@ def build_page(cfg: Config, name: str) -> Path:
         "IH": str(cfg.page.image_height),
         "CSS": _template("page.css"),
         "JS": _template("page.js"),
-        "CFG": json.dumps({"report": name, "labels": ui}, ensure_ascii=False).replace("</", "<\\/"),
+        "CFG": json.dumps(
+            {"report": name, "labels": ui, "news": read_news(cfg.news_file, 6)}, ensure_ascii=False
+        ).replace("</", "<\\/"),
     }
     for k, v in repl.items():
         page = page.replace(f"%%{k}%%", v) if k not in ("CSS", "JS", "CFG") else page
