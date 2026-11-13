@@ -1,0 +1,72 @@
+# agent-workbench configuration. Every key is optional; these are the defaults unless noted.
+# Relative paths are relative to this file. Unknown keys are an error.
+
+workspace = ".workbench"   # remarks.jsonl, news.jsonl, closed.jsonl, reports/, queue/ live here
+site = "site"              # the generated HTML pages
+
+[server]
+host = "127.0.0.1"         # anything else needs a token
+port = 8765
+# token = ""               # or AWB_TOKEN; required when host is not loopback
+
+[page]
+lang = "en"
+dir = "ltr"                # "rtl" for Arabic, Hebrew, Persian
+title = "Review"
+image_height = 260
+# [page.labels]            # override any label: approve, reject, comment, news, reply, progress ...
+# approve = "Looks right"
+
+[review]
+tick_closes = true         # an approval of the current card revision closes the card
+strict_close = true        # `awb close` notes must quote the reviewer, say "my judgment" or start with REOPEN
+settle_seconds = 45        # `awb watch` reports a remark once it has been unchanged this long
+
+[remote]                   # review pages served from a cloud machine, reached over an ssh tunnel
+provider = "ssh"           # ssh (always-on host) | gcloud | command
+# host = "user@example.org"
+# ssh_key = "~/.ssh/id_ed25519"
+port = 8765
+sync_seconds = 20
+auto_stop = true           # stop the machine when no card is open any more
+# gcloud:   instance = "review-box"  zone = "europe-west1-b"  project = "my-project"
+# command:  status_cmd = "my-cloud status"   # prints RUNNING when up
+#           address_cmd = "my-cloud ip"  start_cmd = "my-cloud start"  stop_cmd = "my-cloud stop"
+
+[governor]                 # `awb governor`: protect the machine from the jobs
+max_workers = 6
+keep_gb = 2.5              # memory kept free for the person's own applications
+per_worker_gb = 1.5
+pen_slice = ""             # e.g. "jobs.slice": a systemd user slice whose MemoryHigh follows free memory
+pause_mb = 400             # processes at least this big are eligible for pause/kill
+warn_gb = 1.5              # free memory below this (or pressure >= warn_pressure %): pause the largest
+kill_gb = 0.8              # below this (or pressure >= kill_pressure %): kill the largest
+job_patterns = []          # regexes on command lines that are always eligible
+close_idle_browsers = false
+
+[netpace]
+enabled = true
+# router = "192.0.2.1"     # default: the default gateway
+wan = "1.1.1.1"
+max_mb_s = 6.0
+calm_minutes = 10
+
+[queue]                    # `awb queue run`
+jobs = 12
+connections = 8
+stage_gb = 6
+net_mb_s = 3.0
+deliver = "local"          # local | rclone | command
+deliver_to = "downloads"
+# verify_magic = "%PDF"
+# verify_tail = "%%EOF"
+# verify_cmd = "pdfinfo {file}"
+
+[resumable]                # `awb run`
+resume_free_gb = 4
+max_stalls = 20
+
+[power]                    # `awb power`
+limit_pct = 7
+# sleep_cmd = "systemctl hibernate"
+# job_patterns = ["my_batch_job"]

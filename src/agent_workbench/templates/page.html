@@ -1,0 +1,14 @@
+<!doctype html><html lang="%%LANG%%" dir="%%DIR%%"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>%%TITLE%%</title>
+<style>%%CSS%%</style></head><body style="--ih:%%IH%%px"><main>
+<h1>%%TITLE%%</h1><p class="mut">%%INTRO%%</p>
+<p class="warn" id="noserver" hidden>%%NOSERVER%%</p>
+<div id="bar"><span id="count" class="mut"></span><div id="prog"><i></i></div>
+<span class="filters"><button data-f="all" aria-pressed="true">%%F_ALL%%</button> <button data-f="open">%%F_OPEN%%</button>
+<button data-f="approve">%%F_APPROVED%%</button> <button data-f="reject">%%F_REJECTED%%</button></span></div>
+<section id="news" hidden><h2>%%NEWS%%</h2><div id="newslist"></div></section>
+%%CARDS%%
+<p class="mut">%%CLOSED%%</p>
+</main>
+<script type="application/json" id="awb-cfg">%%CFG%%</script>
+<script>%%JS%%</script></body></html>
