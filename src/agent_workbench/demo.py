@@ -74,16 +74,13 @@ def line_svg(text: str, n: int) -> str:
     )
 
 
-def make_demo(cfg: Config) -> str:
-    """Write the cards and the first news item, build the page; returns the report name."""
+def make_demo(cfg: Config, news: bool = True, build: bool = True) -> str:
+    """Write the cards (and, by default, the first news item and the page); returns the report name."""
     cfg.ensure_dirs()
     img_dir = cfg.ws / "demo-images"
     img_dir.mkdir(parents=True, exist_ok=True)
     cards = []
     for n, (text, bad, good, conf, why) in enumerate(LINES, 1):
-        ocr, proposed = (
-            (text.replace(good, bad, 1), text) if good in text else (text, text.replace(bad, good, 1))
-        )
         img = img_dir / f"line{n}.svg"
         img.write_text(line_svg(text, n), encoding="utf-8")
         cards.append(
@@ -93,7 +90,7 @@ def make_demo(cfg: Config) -> str:
                 "title": f"{bad}  →  {good}",
                 "subtitle": f"line {n} of 7 · confidence {conf}",
                 "why": why,
-                "body": f"OCR text: {ocr}\nProposed: {proposed}",
+                "body": f"OCR read:  {bad}\n\nProposed:  {good}",
                 "images": [str(img.relative_to(cfg.root)) if img.is_relative_to(cfg.root) else str(img)],
             }
         )
@@ -108,14 +105,16 @@ def make_demo(cfg: Config) -> str:
             "cards": cards,
         },
     )
-    post_news(
-        cfg.news_file,
-        "I corrected 212 OCR errors by dictionary and kept these 7 for your eye. "
-        "Question: should spelling follow the printed edition (British) or be modernised?",
-        "question",
-        "Seven lines to confirm",
-    )
-    build_page(cfg, "ocr-fixes")
+    if news:
+        post_news(
+            cfg.news_file,
+            "I corrected 212 OCR errors by dictionary and kept these 7 for your eye. "
+            "Question: should spelling follow the printed edition (British) or be modernised?",
+            "question",
+            "Seven lines to confirm",
+        )
+    if build:
+        build_page(cfg, "ocr-fixes")
     return "ocr-fixes"
 
 

@@ -181,7 +181,8 @@ def dispatch(a: argparse.Namespace, cfg: Config) -> int:
                 print(f"{n}\t{page.open_count(cfg, n)} open")
             return 0
         if a.cards:
-            data = page.load_cards(Path(a.cards))
+            cf = Path(a.cards)
+            data = page.load_cards(cf if cf.exists() else cfg.root / cf)
         else:
             f = cfg.reports_dir / f"{page.report_name(a.report)}.json"
             if not f.is_file():

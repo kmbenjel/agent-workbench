@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" width="960" height="560" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#475569"/></marker>
+    <style>
+      .box{fill:#fff;stroke:#94a3b8;stroke-width:1.5}
+      .agent{fill:#eef2ff;stroke:#6366f1;stroke-width:2}
+      .human{fill:#ecfdf5;stroke:#10b981;stroke-width:2}
+      .file{fill:#fffbeb;stroke:#f59e0b;stroke-width:1.5}
+      .hyg{fill:#f8fafc;stroke:#64748b;stroke-width:1.5;stroke-dasharray:5 4}
+      .rem{fill:#f1f5f9;stroke:#0ea5e9;stroke-width:1.5;stroke-dasharray:6 4}
+      .t{font-size:15px;fill:#0f172a} .m{font-size:13px;fill:#0f172a;font-family:ui-monospace,Consolas,monospace} .s{font-size:12px;fill:#475569} .h{font-size:13px;font-weight:700;fill:#334155;letter-spacing:.04em}
+      .l{stroke:#475569;stroke-width:1.6;fill:none}
+    </style>
+  </defs>
+  <rect width="960" height="560" fill="#ffffff"/>
+  <!-- agent -->
+  <rect class="agent" x="30" y="40" width="250" height="150" rx="12"/>
+  <text class="h" x="46" y="66">AGENT</text>
+  <text class="t" x="46" y="92">Claude Code (plugin + skills)</text>
+  <text class="t" x="46" y="114">or any framework</text>
+  <text class="s" x="46" y="142">awb CLI  ·  MCP tools:</text>
+  <text class="s" x="46" y="160">make_review_page  post_news</text>
+  <text class="s" x="46" y="178">read_remarks  close_card</text>
+  <!-- files -->
+  <rect class="file" x="340" y="40" width="270" height="150" rx="12"/>
+  <text class="h" x="356" y="66">WORKSPACE  (JSONL, append-only)</text>
+  <text class="m" x="356" y="92">reports/*.json   cards</text>
+  <text class="m" x="356" y="114">remarks.jsonl    ticks, comments</text>
+  <text class="m" x="356" y="136">news.jsonl       agent to human</text>
+  <text class="m" x="356" y="158">closed.jsonl     what was dealt with</text>
+  <text class="s" x="356" y="178">awb watch streams settled remarks</text>
+  <!-- server -->
+  <rect class="box" x="670" y="40" width="260" height="150" rx="12"/>
+  <text class="h" x="686" y="66">REVIEW SERVER</text>
+  <text class="t" x="686" y="92">stdlib, 127.0.0.1 only</text>
+  <text class="s" x="686" y="116">serves the generated page</text>
+  <text class="s" x="686" y="134">POST /api/remark  GET /api/news</text>
+  <text class="s" x="686" y="152">host + origin checks, token</text>
+  <!-- human -->
+  <rect class="human" x="670" y="250" width="260" height="96" rx="12"/>
+  <text class="h" x="686" y="276">HUMAN  (browser)</text>
+  <text class="t" x="686" y="302">tick · reject · comment</text>
+  <text class="s" x="686" y="324">answers questions in the news panel</text>
+  <!-- arrows top row -->
+  <path class="l" d="M280 100 H336" marker-end="url(#a)"/>
+  <path class="l" d="M340 150 H284" marker-end="url(#a)"/>
+  <path class="l" d="M610 115 H666" marker-start="url(#a)" marker-end="url(#a)"/>
+  <path class="l" d="M800 190 V246" marker-start="url(#a)" marker-end="url(#a)"/>
+  <text class="s" x="289" y="90">cards</text>
+  <text class="s" x="286" y="168">remarks</text>
+  <!-- remote -->
+  <rect class="rem" x="340" y="250" width="270" height="170" rx="12"/>
+  <text class="h" x="356" y="276">REMOTE MODE  (optional)</text>
+  <text class="t" x="356" y="302">cloud machine runs the server</text>
+  <text class="s" x="356" y="324">ssh -N -L tunnel keeps the local URL</text>
+  <text class="s" x="356" y="342">pushes pages, pulls remarks every 20 s</text>
+  <text class="s" x="356" y="360">stops the machine when no card is open</text>
+  <text class="s" x="356" y="384">providers: ssh host · gcloud · your commands</text>
+  <path class="l" d="M475 190 V246" marker-start="url(#a)" marker-end="url(#a)"/>
+  <path class="l" d="M610 300 H666" marker-start="url(#a)" marker-end="url(#a)"/>
+  <!-- hygiene -->
+  <rect class="hyg" x="30" y="250" width="270" height="260" rx="12"/>
+  <text class="h" x="46" y="276">JOB HYGIENE</text>
+  <text class="t" x="46" y="304">governor</text><text class="s" x="46" y="322">pause, then kill the largest heavy process;</text><text class="s" x="46" y="338">size the worker count from free memory</text>
+  <text class="t" x="46" y="366">netpace + calm</text><text class="s" x="46" y="384">wait for a calm network; pause bulk jobs</text>
+  <text class="t" x="46" y="412">queue</text><text class="s" x="46" y="430">aria2c download, verify, deliver; resumable</text>
+  <text class="t" x="46" y="458">run  ·  power</text><text class="s" x="46" y="476">rerun after kills; pause jobs on low battery</text>
+  <path class="l" d="M165 190 V246" marker-end="url(#a)"/>
+  <text class="s" x="172" y="224">the agent's jobs</text>
+  <text class="s" x="340" y="470">Everything is plain files: any agent that can run a command or read a JSON line can join the loop.</text>
+</svg>
