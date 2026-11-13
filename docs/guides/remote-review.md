@@ -17,4 +17,8 @@ package and the site, starts the server on the remote loopback with a generated 
 prints `http://127.0.0.1:8765/index.html?k=TOKEN`. When no card is open any more the loop does a last pull and stops
 the machine (`auto_stop = false` to keep it). `awb remote down` does it by hand.
 
+The tunnel runs on the agent's machine, so that URL opens there. A phone or a second computer opens it through
+its own ssh client (on Android, for example, Termux) with the same forward, `ssh -N -L 8765:127.0.0.1:8765 user@vm`,
+and the URL `awb remote url` prints; the server answers only requests that reach it on its loopback.
+
 Without systemd the tunnel and the loop run as detached processes instead of user units.

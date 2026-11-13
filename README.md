@@ -48,7 +48,7 @@ network, resumability).
 | News and questions from the agent **on the page**, answered there | ✓ | ✗ not documented | ✗ not documented | ✗ not documented | ✗ not documented | ✗ |
 | A close note must quote what the reviewer really said | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ |
 | Install with no server stack (no database, Docker, account) | ✓ 0.3 MB, 1 package | ✗ 810 MB, 158 packages | ✗ server needs Docker/Elasticsearch or a Hugging Face Space | partial (one wheel, paid licence key) | ✗ hosted service | ✓ built in |
-| Review from a phone through your own machine: ssh tunnel to a cloud VM, auto-stop | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ |
+| Serve the page from your own cloud VM over an ssh tunnel (no open port), auto-stop | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ |
 | Job hygiene: memory governor, network pacing, resumable download queue | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ |
 | Claude Code plugin and MCP tools | ✓ | ✗ | ✗ | ✗ | ✗ | n/a |
 | Rich labelling UIs (spans, boxes, audio, ...) | ✗ (cards: text, images, tick, comment) | ✓ | ✓ | ✓ | partial (rubrics) | ✗ |
@@ -76,9 +76,11 @@ Studio and Argilla offer a lot this kit does not (many annotation types, teams, 
    | Label Studio 1.23.2 | 810 MB | 158 | 33.0 s (empty UI, first start) | 392 MB |
    | Argilla 2.8.0 (client only) | 337 MB | 38 | n/a (server needs Docker/Elasticsearch or a Space) | n/a |
 
-4. **Review from anywhere, from your own machine.** Build the page, serve it from a cloud VM that listens on its
-   own loopback, reach it through an `ssh -N -L` unit, pull the remarks back every 20 s, and let the VM stop itself
-   when no card is open. No open port, no static address, no account. *Evidence:* `awb remote`, `tests/test_remote.py`.
+4. **Review from your own cloud machine.** Build the page, serve it from a cloud VM that listens on its own
+   loopback, reach it through an `ssh -N -L` unit on the agent's machine, pull the remarks back every 20 s, and let
+   the VM stop itself when no card is open. No open port, no static address, no account. The tunnel opens the page
+   on the agent's machine; a phone or a second computer reaches it with its own ssh client (on Android, for
+   example, Termux) running the same `ssh -N -L` to the VM. *Evidence:* `awb remote`, `tests/test_remote.py`.
 5. **The plumbing a multi-week job needs, in the same kit.** A memory governor that pauses (then, only if it must,
    kills) the largest heavy process before the kernel takes the desktop down; network pacing that waits for a calm
    network and pauses bulk transfers while someone is gaming; a resumable aria2c queue with staging caps; a rerun
@@ -94,7 +96,7 @@ hooks are enough. agent-workbench is for the case in between: **one person steer
 
 - **Review pages**: a self-contained HTML page of cards (title, text, images, a "why I am unsure" line), each with
   Approve / Reject / a comment box that saves as you type. Progress bar, filters, dark mode, RTL languages, labels
-  you can translate, works from a phone. Opened as a plain file it keeps your ticks in the browser.
+  you can translate, a layout that fits a phone screen. Opened as a plain file it keeps your ticks in the browser.
 - **News panel** at the top of the page: the agent posts updates and questions; questions get an answer box.
 - **JSONL protocol** ([docs/protocol.md](docs/protocol.md)): `remarks.jsonl`, `news.jsonl`, `closed.jsonl`,
   append-only, one JSON object per line. Any language can write or read it.
@@ -198,7 +200,6 @@ template ([examples/workbench.toml](examples/workbench.toml)).
 
 ## Roadmap
 
-- PyPI release and a hosted static demo page.
 - More card kinds: side-by-side diff, audio snippet, table row.
 - Governor and calm checks for macOS and Windows.
 - Outgoing webhooks and a Slack/ntfy notifier for new remarks.
@@ -209,6 +210,7 @@ template ([examples/workbench.toml](examples/workbench.toml)).
 ```bash
 make install && make test      # 124 tests, 88 % line+branch coverage, about 5 s
 make demo                      # the demo, served
+make demo-site                 # a static copy of the demo page in docs/demo/ (ticks stay in the browser)
 make media                     # regenerate the recording (Chrome + ffmpeg + ImageMagick; run it on a VM)
 python bench/compare.py        # the install/footprint comparison (run it on a VM)
 ```

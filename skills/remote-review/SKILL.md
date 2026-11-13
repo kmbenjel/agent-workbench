@@ -1,6 +1,6 @@
 ---
 name: remote-review
-description: Serve a review page from a cloud machine and reach it through an ssh tunnel, so the reviewer can use a phone or another computer and the page survives the agent's laptop sleeping. Use when the reviewer is away from the agent's machine, when pages are heavy, or when the user says to serve review pages from a VM.
+description: Serve a review page from a cloud machine and reach it through an ssh tunnel, so the reviewer can use another computer or a phone (each with its own ssh tunnel to that machine) and the page survives the agent's laptop sleeping. Use when the reviewer is away from the agent's machine, when pages are heavy, or when the user says to serve review pages from a VM.
 ---
 
 # Remote review
