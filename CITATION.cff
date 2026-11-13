@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use agent-workbench in research or in a published workflow, please cite it."
+title: "agent-workbench: a human-in-the-loop kit for long AI-agent jobs"
+type: software
+authors:
+  - family-names: Benjelloun
+    given-names: Khalid
+version: 0.1.0
+date-released: 2026-11-13
+license: MIT
+repository-code: "https://github.com/kmbenjel/agent-workbench"
+keywords:
+  - human-in-the-loop
+  - ai-agents
+  - review
+  - claude-code
