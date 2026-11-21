@@ -255,7 +255,7 @@ template ([examples/workbench.toml](examples/workbench.toml)).
 
 ```bash
 make install && make test      # 161 tests, 89 % line+branch coverage, about 10 s
-make test-browser              # 9 more: the page in headless Chrome, the static loop against the Worker (Chrome, Node)
+make test-browser              # 10 more: the page in headless Chrome, the static loop against the Worker (Chrome, Node)
 make demo                      # the demo, served
 make demo-site                 # a static copy of the demo page in docs/demo/ (ticks stay in the browser)
 make media                     # regenerate the recording (Chrome + ffmpeg + ImageMagick; run it on a VM)
