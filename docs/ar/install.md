@@ -38,16 +38,20 @@ make install
 
 ## إضافة Claude Code
 
+أضف المتجر ثم ثبّت الإضافة منه:
+
 ```text
-/plugin install agent-workbench --marketplace kmbenjel/agent-workbench
+/plugin marketplace add kmbenjel/agent-workbench
+/plugin install agent-workbench@agent-workbench
 ```
 
 تضيف الإضافة ثلاث مهارات (`review-loop` و`remote-review` و`job-hygiene`) وأربعة أوامر شرطة مائلة
 (`/agent-workbench:review` و`:watch` و`:news` و`:status`) وخادم MCP فيه الأدوات `post_news` و`read_remarks`
-و`make_review_page` و`close_card`.
+و`make_review_page` و`close_card`، ومراقِبًا يبثّ ملاحظاتك إلى الجلسة.
 
 !!! note "ملاحظة"
-    تستدعي المهارات الأمر `awb`، فثبّت الحزمة بـ `pipx install agent-workbench` ليكون في `PATH`.
+    الإضافة مكتفية بنفسها: تحمل الأمر `awb` معها وتضعه في `PATH` الوكيل ما دامت مفعّلة، فلا تحتاج إلا إلى
+    `python3` (3.10 أو أحدث). وإن كنت ثبّتّ `awb` بنفسك فنسختك هي التي تُستعمل.
 
 ## ملف الإعداد
 

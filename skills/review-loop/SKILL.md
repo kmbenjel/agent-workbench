@@ -9,7 +9,8 @@ The reviewer reads a **browser page**, not your terminal. You post cards and new
 and comment; you receive each remark as it settles and act on it. All state is plain JSONL in `.workbench/`.
 
 Use the `awb` CLI (or the MCP tools `make_review_page`, `post_news`, `read_remarks`, `close_card` when the
-`agent-workbench` MCP server is connected). `awb --help` lists everything.
+`agent-workbench` MCP server is connected). `awb --help` lists everything. With the plugin enabled, `awb` is already
+on your shell's `PATH`: there is nothing to install.
 
 ## Steps
 
@@ -25,9 +26,14 @@ Use the `awb` CLI (or the MCP tools `make_review_page`, `post_news`, `read_remar
    reviewer on another device, or a laptop that sleeps, use the `remote-review` skill.
 4. **Tell them on the page.** `awb news post "what I did / what I need" --kind info|question|done`. Questions get an
    answer box on the page. People do not read the terminal: anything they must see goes into news, not into chat.
-5. **Watch.** Start `awb watch` as a **persistent Monitor** (Claude Code: the Monitor tool with command `awb watch`)
-   so each remark arrives as a notification. A remark is reported once the reviewer stops typing (45 s by default).
-   Without Monitor: poll `awb remarks` (unhandled remarks, `--json` for machine use).
+5. **Watch.** Each remark must reach you as a notification, once the reviewer stops typing (45 s by default).
+   - In an interactive Claude Code session the plugin has already started the watcher when this skill was invoked
+     (monitor `remarks`, which runs `awb watch` in the session's directory). Do not start another.
+   - If you work on another directory (`awb --root DIR ...`), or no monitor is running, start one yourself as a
+     **persistent Monitor** (the Monitor tool with command `awb watch`, or `awb --root DIR watch`).
+   - One watcher streams a workspace at a time. A second `awb watch` prints who holds the stream and exits with
+     status 3: that is not an error to retry, the remarks arrive where the first one runs.
+   - Without Monitor (headless runs): poll `awb remarks` (unhandled remarks, `--json` for machine use).
    Line format: `REMARK <report> <card> verdict=approve|reject|none «comment»`; answers to your questions arrive as
    `REPLY _news <news-id> verdict=none «answer»`.
 6. **Act on every remark**, then **close it**: `awb close REPORT CARD 'swapped for the older scan: «use the older one»'`.
@@ -36,8 +42,9 @@ Use the `awb` CLI (or the MCP tools `make_review_page`, `post_news`, `read_remar
    - A comment is an instruction. Do it; do not argue on the card.
 7. **Closing is strict.** The note must quote the reviewer in «…» and the words must really be on record, or say
    `my judgment` when you decided. Never write "he says it is fine" without his words: the command refuses it.
-8. **Keep the loop alive.** Process remarks continuously while the job runs; re-arm the Monitor at its expiry. After
-   a redo of the job, re-run step 1: judged cards stay hidden unless their content changed.
+8. **Keep the loop alive.** Process remarks continuously while the job runs; if you started the Monitor yourself,
+   re-arm it at its expiry. After a redo of the job, re-run step 1: judged cards stay hidden unless their content
+   changed.
 
 ## Rules that matter
 

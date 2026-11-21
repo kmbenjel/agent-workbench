@@ -1,0 +1,10 @@
+#!/bin/sh
+# The awb command for the Claude Code plugin: it runs the package that ships inside the plugin, so there is
+# nothing to install. Claude Code puts this folder on the PATH of its shell while the plugin is enabled; a copy
+# of awb you installed yourself (pipx, uv tool) comes first on PATH and wins.
+root=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd) || exit 127
+python3 -c 'import sys; sys.exit(sys.version_info < (3, 10))' 2>/dev/null || {
+  echo "awb: needs python3 3.10 or newer on PATH" >&2
+  exit 127
+}
+PYTHONPATH="$root/src${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m agent_workbench "$@"

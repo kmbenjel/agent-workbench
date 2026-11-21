@@ -27,8 +27,9 @@ The demo page is ready in about half a second (`awb demo` builds it, `awb serve`
 copy you can click through in any browser, no install, is in [`docs/demo/`](docs/demo/index.html) (ticks stay in your
 browser).
 
-In Claude Code: `/plugin install agent-workbench --marketplace kmbenjel/agent-workbench`, then ask for a review
-(`/agent-workbench:review`) or let the `review-loop` skill take over. See [Claude Code plugin](#claude-code-plugin).
+In Claude Code: `/plugin marketplace add kmbenjel/agent-workbench`, then `/plugin install agent-workbench@agent-workbench`,
+and ask for a review (`/agent-workbench:review`) or let the `review-loop` skill take over. The plugin carries its own
+`awb`, so there is nothing else to install. See [Claude Code plugin](#claude-code-plugin).
 
 ## Why agent-workbench? How it compares
 
@@ -170,17 +171,29 @@ The governor, battery guard and calm checks read Linux `/proc`, `/sys` and `ping
 ## Claude Code plugin
 
 ```text
-/plugin install agent-workbench --marketplace kmbenjel/agent-workbench
+/plugin marketplace add kmbenjel/agent-workbench
+/plugin install agent-workbench@agent-workbench
 ```
+
+From a shell it is the same two steps: `claude plugin marketplace add kmbenjel/agent-workbench` and
+`claude plugin install agent-workbench@agent-workbench`.
 
 | Piece | Name |
 |---|---|
 | Skills | `review-loop`, `remote-review`, `job-hygiene` |
 | Slash commands | `/agent-workbench:review`, `:watch`, `:news`, `:status` |
 | MCP server | `post_news`, `read_remarks`, `make_review_page`, `close_card` (stdlib, started with `python3 -m agent_workbench mcp`) |
+| `awb` command | `bin/awb` runs the package that ships inside the plugin; it is on the agent's `PATH` while the plugin is enabled |
+| Monitor | `remarks` starts `awb watch` the first time the `review-loop` skill runs, so each settled remark arrives in the session as a notification |
 
-The plugin expects the `awb` command on `PATH` (`pipx install agent-workbench`). Plain CLI use needs no plugin: every
-command has `--json` output where it matters, so any agent framework can drive it.
+The plugin is self-contained: it needs `python3` 3.10 or newer on `PATH` and nothing else (a copy of `awb` you
+installed yourself comes first on `PATH` and is used instead). One watcher streams a workspace at a time: a second
+`awb watch` says which process holds the stream and leaves, so a remark is never delivered twice. Monitors run in
+interactive sessions; in a headless run (`claude -p`) the skill has the agent poll `awb remarks`. Plain CLI use needs
+no plugin: every command has `--json` output where it matters, so any agent framework can drive it.
+
+Checked with `claude plugin validate . --strict` and a real install (Claude Code 2.1.321); `tests/test_plugin.py`
+starts the shim, the MCP server and the monitor exactly as the manifests declare them.
 
 ## Configuration
 

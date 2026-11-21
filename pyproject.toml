@@ -40,7 +40,7 @@ Documentation = "https://warraq.benjelloun.dev/agent-workbench/"
 packages = ["src/agent_workbench"]
 
 [tool.hatch.build.targets.sdist]
-include = ["src", "tests", "docs", "examples", "skills", "commands", ".claude-plugin", ".mcp.json", "README.md", "LICENSE", "CHANGELOG.md"]
+include = ["src", "tests", "docs", "examples", "skills", "commands", "bin", "monitors", ".claude-plugin", ".mcp.json", "README.md", "LICENSE", "CHANGELOG.md"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

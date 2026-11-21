@@ -1,0 +1,8 @@
+[
+  {
+    "name": "remarks",
+    "command": "\"${CLAUDE_PLUGIN_ROOT}\"/bin/awb watch",
+    "description": "The reviewer's ticks and comments from the review page, one line each as they settle",
+    "when": "on-skill-invoke:review-loop"
+  }
+]
