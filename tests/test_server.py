@@ -237,6 +237,7 @@ def test_token_with_any_characters_and_no_open_redirect(with_token):
     assert raw(base, "GET", "/rep.html", {"Cookie": h["Set-Cookie"].split(";")[0]})[0] == 200
     # "//host/path" would be another site: the redirect always stays on this server
     assert raw(base, "GET", "//evil.example/x?" + good)[1]["Location"] == "/evil.example/x"
+    assert raw(base, "GET", "/\\evil.example/x?" + good)[1]["Location"] == "/evil.example/x"
 
 
 def test_the_bound_address_is_a_valid_host(with_token):

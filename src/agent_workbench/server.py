@@ -117,8 +117,9 @@ def make_handler(cfg: Config, bound: str = "") -> type[SimpleHTTPRequestHandler]
                 self.send_header(
                     "Set-Cookie", f"awbk={cookie}; Path=/; Max-Age=2592000; HttpOnly; SameSite=Strict"
                 )
-                # one leading slash: "//host/x" would send the browser to another site
-                self.send_header("Location", "/" + u.path.lstrip("/"))
+                # one leading slash: "//host/x" (or "/\host/x", which browsers read the same) would send the
+                # browser to another site
+                self.send_header("Location", "/" + u.path.lstrip("/\\"))
                 self.end_headers()
                 return False
             jar = {
