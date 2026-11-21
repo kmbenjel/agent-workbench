@@ -43,6 +43,7 @@ reviewer's own page may write one, and nothing a card shows may act.
 | Reading files outside the site | Paths are resolved (symlinks included) and confined to the site directory; no directory listings | `test_path_traversal_is_confined`, `test_directories_are_not_listed` |
 | Large or malformed requests | Bodies are capped at 64 KB, lengths are validated, idle connections time out | `test_bad_requests_are_refused` |
 | A save that failed looks saved | Any answer other than 2xx is shown as "not saved" | `test_a_refused_save_is_not_reported_as_saved` (Chrome) |
+| A static host that allows framing: a page elsewhere frames the review page, whose browser remembers the key | Inside a frame the page does not use the key, so a click there reaches no one | `test_static_page_in_a_frame_does_not_use_the_key` (Chrome) |
 
 - Static review: the comment backend takes bearer keys (no cookie, so no cross-site request can borrow the
   reviewer's identity), answers only origins on its allow-list, and never sees the reviewer's key in a URL (it

@@ -34,6 +34,7 @@ All notable changes to this project are documented here. The format follows
 - Each page carries a content security policy that allows only the kit's own script, by hash.
 - A card's `rev` is escaped in its attribute, the page template is filled in one pass, and the JSON data block
   holds no `<`, `>` or `&`.
+- A static-review page inside another page's frame does not use the reviewer's key.
 - SVG and XML files are served sandboxed; `Sec-Fetch-Site` must be `same-origin` on POST; a negative
   `Content-Length` is refused; the `?k=` redirect cannot leave the server.
 

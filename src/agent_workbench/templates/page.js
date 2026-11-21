@@ -5,7 +5,9 @@ const L = CFG.labels, R = CFG.report;
 // in the link ("#k=...") and travels as a bearer token; it is remembered here so the other pages open too.
 const BASE = CFG.api ? CFG.api.replace(/\/+$/, '') + '/api/' : 'api/';
 let KEY = '';
-if (CFG.api) {
+// Inside another page's frame the key is not used: a static host sends no frame-ancestors header of ours, and a
+// framed page could be made to collect a click on Approve. There it says it has no key and keeps ticks locally.
+if (CFG.api && window.top === window.self) {
   const m = /(?:^#|&)k=([^&]*)/.exec(location.hash), id = 'awb:key:' + CFG.api;
   if (m) { try { KEY = decodeURIComponent(m[1]); } catch (e) { KEY = m[1]; } }
   try { if (m) localStorage.setItem(id, KEY); else KEY = localStorage.getItem(id) || ''; } catch (e) { /* no storage: the link's key only */ }

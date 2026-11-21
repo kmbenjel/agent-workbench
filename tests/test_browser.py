@@ -236,6 +236,28 @@ def test_static_host_wrong_key_says_so_and_keeps_the_work(chrome, static_setup):
     assert s.pull() == []
 
 
+def test_static_page_in_a_frame_does_not_use_the_key(chrome, static_setup):
+    """A static host may allow framing: a framed page then acts for no one, even with the key remembered."""
+    cfg, s = static_setup
+    chrome.goto(s.url("rep"))  # the key is now remembered for this site
+    wait(
+        chrome,
+        "document.querySelector('#noserver').hidden === true && !!document.querySelector('#count').textContent",
+    )
+    (cfg.site_dir / "frame.html").write_text(
+        '<iframe id="f" src="rep.html" width="800" height="600"></iframe>'
+    )
+    chrome.goto(cfg.static.page_url + "/frame.html")
+    inner = "document.querySelector('#f').contentDocument"
+    wait(
+        chrome, f"{inner} && {inner}.querySelector('#noserver') && !{inner}.querySelector('#noserver').hidden"
+    )
+    chrome.js(f"{inner}.querySelector('{APPROVE}').click()")
+    st = 'article[data-card="c1"] .st'
+    assert chrome.js(f"{inner}.querySelector('{st}').textContent") == "kept in this browser"
+    assert s.pull() == []
+
+
 def test_the_demo_shows_its_pictures_and_news(chrome, tmp_path, serve):
     """`awb demo`, served and as the static copy in docs/demo: SVG pictures render, the question is on the page."""
     from agent_workbench.demo import make_demo

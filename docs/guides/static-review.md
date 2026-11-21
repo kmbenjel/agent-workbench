@@ -58,4 +58,6 @@ awb watch                                  # unchanged: one line per settled rem
 - The key guards the remarks and the news. The pages are as public as their host makes them: for private material
   use a host with access control, or [remote review](remote-review.md), where nothing is published.
 - The link is a password. Send it the way you would send one, and replace the reviewer key to withdraw it.
+- Inside another page's frame the review page does not use the key (a static host may allow framing), so a click
+  collected there reaches no one.
 - The backend keeps the latest remark per card, which is all the protocol needs.
