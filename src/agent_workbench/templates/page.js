@@ -6,9 +6,9 @@ const L = CFG.labels, R = CFG.report;
 const BASE = CFG.api ? CFG.api.replace(/\/+$/, '') + '/api/' : 'api/';
 let KEY = '';
 if (CFG.api) {
-  const m = /(?:^#|&)k=([^&]*)/.exec(location.hash);
-  try { if (m) localStorage.setItem('awb:key:' + CFG.api, KEY = decodeURIComponent(m[1])); else KEY = localStorage.getItem('awb:key:' + CFG.api) || ''; }
-  catch (e) { if (m) KEY = m[1]; }
+  const m = /(?:^#|&)k=([^&]*)/.exec(location.hash), id = 'awb:key:' + CFG.api;
+  if (m) { try { KEY = decodeURIComponent(m[1]); } catch (e) { KEY = m[1]; } }
+  try { if (m) localStorage.setItem(id, KEY); else KEY = localStorage.getItem(id) || ''; } catch (e) { /* no storage: the link's key only */ }
 }
 // live: a server answers. Opened as a file, or from a host that only serves files, the page keeps ticks and
 // comments in this browser instead (load() decides on the first request).
