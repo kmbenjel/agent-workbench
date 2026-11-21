@@ -16,7 +16,7 @@ flowchart LR
 ## Set up once
 
 1. **A comment backend.** [`examples/cloudflare-worker/`](../../examples/cloudflare-worker/README.md) is one for
-   Cloudflare (a Worker and an R2 bucket, deployed with three commands). It holds two keys: the reviewer's and the
+   Cloudflare (a Worker and an R2 bucket, deployed with four wrangler commands). It holds two keys: the reviewer's and the
    agent's. Anything that answers the four requests of [the protocol](../protocol.md#the-http-api) will do.
 2. **A static host** for the site directory: GitHub Pages, Cloudflare Pages, a bucket with a website endpoint,
    a directory on a web server.
