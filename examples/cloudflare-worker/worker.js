@@ -119,7 +119,7 @@ async function route(request, env, originOk) {
     for (let attempt = 0; attempt < 6; attempt++) {
       const cur = await env.BUCKET.get(key);
       const all = cur ? await cur.json() : {};
-      all[rec.card] = rec;
+      Object.defineProperty(all, rec.card, {value: rec, enumerable: true, writable: true, configurable: true});  // a card may be named __proto__
       const done = await env.BUCKET.put(key, JSON.stringify(all), {
         onlyIf: cur ? {etagMatches: cur.etag} : new Headers({'If-None-Match': '*'}),
         httpMetadata: {contentType: 'application/json'},

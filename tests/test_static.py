@@ -321,6 +321,14 @@ def test_worker_stores_the_latest_remark_per_card(worker):
     cut = got["é" * 60]
     assert len(cut["comment"]) == 4000 and len(cut["rev"]) == 40 and cut["v"] == 1
     assert req(worker, "GET", "/api/remarks?report=other", "rk")[2] == {}
+    # card ids are the agent's own strings: one that is a special name in JavaScript is stored like any other
+    assert (
+        req(worker, "POST", "/api/remark", "rk", {"report": "p", "card": "__proto__", "verdict": "approve"})[
+            0
+        ]
+        == 200
+    )
+    assert req(worker, "GET", "/api/remarks?report=p", "at")[2]["__proto__"]["verdict"] == "approve"
 
 
 def test_the_whole_static_loop_against_the_worker(worker, tmp_path, report_cards, monkeypatch, capsys):
