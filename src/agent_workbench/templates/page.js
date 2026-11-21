@@ -1,9 +1,14 @@
 const CFG = JSON.parse(document.getElementById('awb-cfg').textContent);
-const L = CFG.labels, R = CFG.report, live = location.protocol.startsWith('http');
+const L = CFG.labels, R = CFG.report;
+// live: a review server answers next to the page. Opened as a file, or from a host that only serves files, the
+// page keeps ticks and comments in this browser instead (load() decides on the first request).
+let live = location.protocol.startsWith('http');
 const $ = (s, r) => (r || document).querySelector(s), $$ = (s, r) => [...(r || document).querySelectorAll(s)];
-const post = (report, card, verdict, comment, rev) => fetch('api/remark', {method: 'POST',
-  headers: {'Content-Type': 'application/json'}, body: JSON.stringify({report, card, verdict, comment, rev})}).then(r => r.json());
-const hhmm = t => (t || '').slice(11, 19);
+// a refusal (403, 413 ...) is an error, never "saved"
+const api = (path, opt) => fetch('api/' + path, opt).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+const post = (report, card, verdict, comment, rev) => api('remark', {method: 'POST',
+  headers: {'Content-Type': 'application/json'}, body: JSON.stringify({report, card, verdict, comment, rev})});
+const hhmm = t => String(t || '').slice(11, 19);
 const fmt = (s, o) => s.replace(/\{(\w+)\}/g, (_, k) => o[k]);
 function state(a) { return a.dataset.verdict === 'approve' ? 'approved' : a.dataset.verdict === 'reject' ? 'rejected' : a.dataset.changed ? 'changed' : 'open'; }
 function paint(a) {
@@ -38,37 +43,38 @@ $$('article').forEach(a => {
   $$('button', a).forEach(b => b.onclick = () => { a.dataset.verdict = a.dataset.verdict === b.dataset.v ? '' : b.dataset.v; paint(a); save(a); });
   t.addEventListener('input', () => { clearTimeout(tm); tm = setTimeout(() => save(a), 800); });
 });
+function fill(get, note) {
+  $$('article').forEach(a => { const x = get(a.dataset.card); if (!x) return;
+    a.dataset.verdict = x.verdict || ''; $('textarea', a).value = x.comment || '';
+    $('.st', a).textContent = note(x); paint(a); });
+}
 async function load() {
-  if (!live) {
-    $('#noserver').hidden = false;
-    $$('article').forEach(a => { const x = mem.get(a.dataset.card); if (!x) return;
-      a.dataset.verdict = x.verdict || ''; $('textarea', a).value = x.comment || ''; paint(a); });
-    progress(); return;
+  if (live) {
+    try {
+      const d = await api('remarks?report=' + encodeURIComponent(R));
+      fill(id => d[id], x => L.saved + ' ' + hhmm(x.time));
+    } catch (e) { live = false; }  // no review server answers here: say so and keep the work in this browser
   }
-  try {
-    const d = await (await fetch('api/remarks?report=' + encodeURIComponent(R))).json();
-    $$('article').forEach(a => { const x = d[a.dataset.card]; if (!x) return;
-      a.dataset.verdict = x.verdict || ''; $('textarea', a).value = x.comment || '';
-      $('.st', a).textContent = L.saved + ' ' + hhmm(x.time); paint(a); });
-  } catch (e) { $('#noserver').hidden = false; }
+  if (!live) { $('#noserver').hidden = false; fill(id => mem.get(id), () => L.local); }
   progress();
 }
-const esc = s => s.replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 let typing = false;
 async function news() {
   try {
-    const [items, rep] = live ? await Promise.all([fetch('api/news').then(r => r.json()), fetch('api/remarks?report=_news').then(r => r.json())])
+    const [items, rep] = live ? await Promise.all([api('news'), api('remarks?report=_news')])
                               : [CFG.news || [], Object.fromEntries((CFG.news || []).map(n => [n.id, mem.get('news:' + n.id) || {}]))];
     const box = $('#news'); if (!items.length) { box.hidden = true; return; }
     if (typing) return;
     box.hidden = false;
-    $('#newslist').innerHTML = items.slice(-6).reverse().map(n => `<div class="item" data-id="${n.id}">
-      <span class="kind k-${n.kind}">${esc(L['kind_' + n.kind] || n.kind)}</span> <span class="mut" dir="ltr" style="unicode-bidi:isolate">${esc(n.time.slice(5, 16).replace('T', ' '))}</span>
+    $('#newslist').innerHTML = items.slice(-6).reverse().map(n => `<div class="item" data-id="${esc(n.id)}">
+      <span class="kind k-${esc(n.kind)}">${esc(L['kind_' + n.kind] || n.kind)}</span> <span class="mut" dir="ltr" style="unicode-bidi:isolate">${esc(String(n.time || '').slice(5, 16).replace('T', ' '))}</span>
       ${n.title ? '<b>' + esc(n.title) + '</b>' : ''}<div>${esc(n.text)}</div>
       ${n.kind === 'question' ? `<textarea rows="2" placeholder="${esc(L.reply)}">${esc((rep[n.id] || {}).comment || '')}</textarea>` : ''}</div>`).join('');
     $$('#newslist textarea').forEach(t => { let tm; const id = t.closest('.item').dataset.id;
       t.addEventListener('input', () => { typing = true; clearTimeout(tm); tm = setTimeout(() => {
-        if (live) post('_news', id, '', t.value, '').then(() => typing = false); else { mem.set('news:' + id, {comment: t.value}); typing = false; } }, 800); }); });
+        if (live) post('_news', id, '', t.value, '').catch(() => {}).then(() => typing = false);
+        else { mem.set('news:' + id, {comment: t.value}); typing = false; } }, 800); }); });
   } catch (e) { /* the server may be away for a moment */ }
 }
-load(); news(); if (live) setInterval(news, 8000);
+load().then(() => { news(); if (live) setInterval(news, 8000); });
