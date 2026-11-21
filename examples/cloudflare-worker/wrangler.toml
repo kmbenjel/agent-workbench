@@ -1,0 +1,16 @@
+# The comment backend for statically hosted review pages. Deploy: see README.md in this directory.
+name = "awb-comments"
+main = "worker.js"
+compatibility_date = "2026-11-01"
+
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "awb-comments"
+
+[vars]
+# the origins your review pages are served from, comma-separated (scheme and host, no path)
+ALLOWED_ORIGINS = "https://reviews.example.org"
+
+# Secrets, set once with `npx wrangler secret put NAME` (never in this file):
+#   REVIEW_KEY    the reviewer's key; the link carries it after "#k="
+#   AGENT_TOKEN   the agent's token for `awb static sync`

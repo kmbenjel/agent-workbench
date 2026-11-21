@@ -60,7 +60,7 @@ def serve():
     started = []
 
     def start(srv):
-        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        threading.Thread(target=srv.serve_forever, kwargs={"poll_interval": 0.02}, daemon=True).start()
         started.append(srv)
         return f"http://127.0.0.1:{srv.server_address[1]}"
 
@@ -176,3 +176,84 @@ def test_opened_as_a_file(chrome, site):
     chrome.click('article[data-card="c2"] button.no')
     chrome.goto(url)
     wait(chrome, "document.querySelector('article[data-card=\"c2\"]').className === 'rejected'")
+
+
+# -- static review: the page on a file host, the remarks through the Worker (run by Node) ----------------------
+@pytest.fixture
+def static_setup(tmp_path, report_cards, serve):
+    from conftest import start_backend, stop_backend
+
+    from agent_workbench.static import StaticReview
+
+    site_dir = tmp_path / "site"
+    site_dir.mkdir()
+    pages = serve(
+        http.server.ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(Quiet, directory=str(site_dir)))
+    )
+    p, api = start_backend(pages, tmp_path)
+    try:
+        cfg = parse(
+            {"static": {"api": api, "page_url": pages, "agent_token": "at", "review_key": "rk"}}, tmp_path
+        )
+        page.save_report(cfg, "rep", report_cards)
+        store.post_news(cfg.news_file, "British or modern spelling?", "question")
+        page.build_page(cfg, "rep")
+        page.build_index(cfg)
+        s = StaticReview(cfg)
+        s.sync()  # the news reaches the backend
+        yield cfg, s
+    finally:
+        stop_backend(p)
+
+
+def test_static_host_tick_and_answer_reach_the_agent(chrome, static_setup):
+    cfg, s = static_setup
+    chrome.goto(s.url())  # the index, with the key in the link
+    chrome.click('a[href*="rep.html"]')  # the index hands the key on
+    wait(chrome, "location.pathname === '/rep.html' && location.hash === '#k=rk'")
+    wait(chrome, "document.querySelector('#count').textContent")
+    assert chrome.js("document.querySelector('#noserver').hidden") is True
+    chrome.click(APPROVE)
+    wait(chrome, "document.querySelector('article[data-card=\"c1\"] .st').textContent.startsWith('saved')")
+    wait(chrome, "!!document.querySelector('#newslist textarea')")
+    chrome.type("#newslist textarea", "British")
+    new = {(r["report"], r["card"]): r for r in s.pull()}
+    assert new[("rep", "c1")]["verdict"] == "approve"
+    assert [r["comment"] for k, r in new.items() if k[0] == "_news"] == ["British"]
+    # the key is remembered for this site: the bare address works on the next visit, and shows what was saved
+    chrome.goto(cfg.static.page_url + "/rep.html")
+    wait(chrome, "document.querySelector('article[data-card=\"c1\"]').className === 'approved'")
+    assert status(chrome).startswith("saved")
+
+
+def test_static_host_wrong_key_says_so_and_keeps_the_work(chrome, static_setup):
+    cfg, s = static_setup
+    chrome.goto(cfg.static.page_url + "/rep.html#k=not-the-key")
+    wait(chrome, "document.querySelector('#noserver').hidden === false")
+    assert "no valid review key" in chrome.js("document.querySelector('#noserver').textContent")
+    chrome.click(APPROVE)
+    assert status(chrome) == "kept in this browser"
+    assert s.pull() == []
+
+
+def test_the_demo_shows_its_pictures_and_news(chrome, tmp_path, serve):
+    """`awb demo`, served and as the static copy in docs/demo: SVG pictures render, the question is on the page."""
+    from agent_workbench.demo import make_demo
+
+    cfg = parse({}, tmp_path)
+    name = make_demo(cfg)
+    for url in (
+        serve(make_server(cfg, "127.0.0.1", 0)) + f"/{name}.html",
+        (cfg.site_dir / f"{name}.html").as_uri(),
+        (Path(__file__).resolve().parents[1] / "docs" / "demo" / "index.html").as_uri(),
+    ):
+        chrome.goto(url)
+        assert wait(chrome, "document.querySelector('#count').textContent") == "0 of 7 reviewed", url
+        widths = chrome.js(
+            "[...document.querySelectorAll('.pics img')].map(i => (i.scrollIntoView(), i.naturalWidth))"
+        )
+        wait(
+            chrome, "[...document.querySelectorAll('.pics img')].every(i => i.complete && i.naturalWidth > 0)"
+        )
+        assert len(widths) == 7, url
+        assert wait(chrome, "document.querySelector('#newslist').textContent.includes('Question')"), url

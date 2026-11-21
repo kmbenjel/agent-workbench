@@ -97,18 +97,25 @@ hooks are enough. agent-workbench is for the case in between: **one person steer
 
 - **Review pages**: a self-contained HTML page of cards (title, text, images, a "why I am unsure" line), each with
   Approve / Reject / a comment box that saves as you type. Progress bar, filters, dark mode, RTL languages, labels
-  you can translate, a layout that fits a phone screen. Opened as a plain file it keeps your ticks in the browser.
+  you can translate, a layout that fits a phone screen. Opened as a plain file, or from a host that only serves
+  files, it keeps your ticks in the browser and says so.
 - **News panel** at the top of the page: the agent posts updates and questions; questions get an answer box.
 - **JSONL protocol** ([docs/protocol.md](docs/protocol.md)): `remarks.jsonl`, `news.jsonl`, `closed.jsonl`,
   append-only, one JSON object per line. Any language can write or read it.
 - **`awb watch`**: settled remarks as lines (or JSON), with a saved position; a Claude Code Monitor takes it directly.
 - **Stable cards**: ids are yours; rebuilding a page never renumbers and never loses a remark.
 - **Remote mode**: ssh host, `gcloud`, or your own start/stop commands; tunnel unit; 20 s sync; auto-stop.
+- **Static mode**: the page on any static host, the remarks through a small comment backend (a Cloudflare Worker
+  and an R2 bucket are in [`examples/cloudflare-worker/`](examples/cloudflare-worker/README.md)); an https link for
+  the reviewer's phone, and nothing of yours left running.
 - **Job hygiene**: `governor`, `calm wait`, `netguard`, `queue`, `run`, `power`.
-- **Plugin + MCP**: skills (`review-loop`, `remote-review`, `job-hygiene`), slash commands, and an MCP server with
-  `post_news`, `read_remarks`, `make_review_page`, `close_card` (no dependencies).
+- **Plugin + MCP**: skills (`review-loop`, `remote-review`, `static-review`, `job-hygiene`), slash commands, an
+  MCP server with `post_news`, `read_remarks`, `make_review_page`, `close_card` (no dependencies), its own `awb`
+  and a monitor that streams the remarks.
 - **Safe by default**: loopback only; a token is required to listen elsewhere; `Host`, `Origin` and content-type
-  checks against DNS rebinding and cross-site posts; path-confined static files; bodies capped at 64 KB.
+  checks against DNS rebinding and cross-site posts; no page can be framed by another site; each page allows only
+  the kit's own script (by hash), so card text can never run; path-confined static files, pictures served inert;
+  bodies capped at 64 KB ([security model](docs/architecture.md#security-model)).
 
 ## How it works
 
@@ -155,6 +162,30 @@ awb remote down     # a last pull, then stop the VM and the tunnel (auto-stops b
 The VM needs only `python3`, `rsync` and key-based ssh; the package is pushed to it. Its server binds the VM's own
 loopback and requires a token generated for you.
 
+## Static review
+
+When no machine can stay up for the review, publish the page and let a small backend carry the remarks:
+
+```toml
+# workbench.toml
+[static]
+api = "https://awb-comments.example.workers.dev"   # the comment backend (yours)
+page_url = "https://reviews.example.org"           # any static host: Pages, a bucket, a web server
+publish_cmd = "rsync -a {site}/ host:/var/www/reviews/"
+```
+
+```bash
+awb static publish        # upload the site directory
+awb static url ocr        # the reviewer's link; the key rides after '#', which no server ever sees
+awb static loop &         # every 20 s: pull remarks into remarks.jsonl, push the news panel
+```
+
+`awb watch`, `awb close` and the rest work unchanged, because pulled remarks land in the same `remarks.jsonl`. The
+backend is four requests ([protocol](docs/protocol.md#the-http-api)); the ready-made one is a Cloudflare Worker of
+about 150 lines with one R2 bucket, runnable on your machine with `node dev-server.mjs` and no account
+([recipe](examples/cloudflare-worker/README.md), [guide](docs/guides/static-review.md)). The key guards the
+remarks, not the pages: publish only what may be seen by anyone who has the address.
+
 ## Job hygiene
 
 | Command | What it does |
@@ -180,7 +211,7 @@ From a shell it is the same two steps: `claude plugin marketplace add kmbenjel/a
 
 | Piece | Name |
 |---|---|
-| Skills | `review-loop`, `remote-review`, `job-hygiene` |
+| Skills | `review-loop`, `remote-review`, `static-review`, `job-hygiene` |
 | Slash commands | `/agent-workbench:review`, `:watch`, `:news`, `:status` |
 | MCP server | `post_news`, `read_remarks`, `make_review_page`, `close_card` (stdlib, started with `python3 -m agent_workbench mcp`) |
 | `awb` command | `bin/awb` runs the package that ships inside the plugin; it is on the agent's `PATH` while the plugin is enabled |
@@ -209,7 +240,8 @@ template ([examples/workbench.toml](examples/workbench.toml)).
   judged. Redo the job and judged cards stay out of the way; change a card and it returns marked.
 - **Closing is an act with a witness.** The note quotes the reviewer and the quote is checked against the record.
 - **Least destructive first.** The governor pauses before it kills, and shrinks the worker count before either.
-- **No hosted relay.** Remote review is your VM and your ssh key; the server never listens beyond loopback there.
+- **No relay of ours.** Remote review is your VM and your ssh key, and the server never listens beyond loopback
+  there. Static review is your static host and a backend you deploy yourself; its keys never leave your hands.
 
 ## Roadmap
 
@@ -221,7 +253,8 @@ template ([examples/workbench.toml](examples/workbench.toml)).
 ## Development
 
 ```bash
-make install && make test      # 124 tests, 88 % line+branch coverage, about 5 s
+make install && make test      # 161 tests, 89 % line+branch coverage, about 10 s
+make test-browser              # 9 more: the page in headless Chrome, the static loop against the Worker (Chrome, Node)
 make demo                      # the demo, served
 make demo-site                 # a static copy of the demo page in docs/demo/ (ticks stay in the browser)
 make media                     # regenerate the recording (Chrome + ffmpeg + ImageMagick; run it on a VM)

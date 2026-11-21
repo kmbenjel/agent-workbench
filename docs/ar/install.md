@@ -45,7 +45,7 @@ make install
 /plugin install agent-workbench@agent-workbench
 ```
 
-تضيف الإضافة ثلاث مهارات (`review-loop` و`remote-review` و`job-hygiene`) وأربعة أوامر شرطة مائلة
+تضيف الإضافة أربع مهارات (`review-loop` و`remote-review` و`static-review` و`job-hygiene`) وأربعة أوامر شرطة مائلة
 (`/agent-workbench:review` و`:watch` و`:news` و`:status`) وخادم MCP فيه الأدوات `post_news` و`read_remarks`
 و`make_review_page` و`close_card`، ومراقِبًا يبثّ ملاحظاتك إلى الجلسة.
 

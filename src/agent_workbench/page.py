@@ -43,6 +43,10 @@ LABELS = {
     "changed": "changed since your last judgment",
     "closed": "{n} card(s) already dealt with are hidden.",
     "noserver": "Not connected to a review server (awb serve): your ticks and comments stay in this browser only.",
+    "nokey": "This link carries no valid review key, so nothing reaches the agent: open the full link you were given. "
+    "Until then your ticks and comments stay in this browser only.",
+    "offline": "The comment service does not answer: your ticks and comments stay in this browser only. "
+    "Reload the page to try again.",
     "local": "kept in this browser",
     "kind_info": "info",
     "kind_question": "question",
@@ -54,8 +58,10 @@ _SAFE = re.compile(r"[^A-Za-z0-9._-]+")
 
 def report_name(name: str) -> str:
     n = _SAFE.sub("-", name).strip("-.")
-    if not n or n.startswith("_"):
-        raise ValueError(f"bad report name {name!r}: use letters, digits, '-', '_' (not first), '.'")
+    if not n or n.startswith("_") or len(n) > 60:  # 60: what a remark's report field holds
+        raise ValueError(
+            f"bad report name {name!r}: use letters, digits, '-', '_' (not first), '.', at most 60 characters"
+        )
     return n
 
 
@@ -248,7 +254,15 @@ def build_page(cfg: Config, name: str) -> Path:
             "IH": str(int(cfg.page.image_height)),
             "CSS": _template("page.css"),
             "JS": js,
-            "CFG": _json_for_html({"report": name, "labels": ui, "news": read_news(cfg.news_file, 6)}),
+            "CFG": _json_for_html(
+                {
+                    "report": name,
+                    "labels": ui,
+                    "news": read_news(cfg.news_file, 6),
+                    # set: the page is published on a static host and talks to this comment backend
+                    **({"api": cfg.static.api} if cfg.static.api else {}),
+                }
+            ),
         },
     )
     cfg.site_dir.mkdir(parents=True, exist_ok=True)
@@ -265,11 +279,15 @@ def build_index(cfg: Config) -> Path:
     )
     dst = cfg.site_dir / "index.html"
     cfg.site_dir.mkdir(parents=True, exist_ok=True)
+    # on a static host the reviewer's key travels in the link ("#k=..."): the index hands it on to each report
+    js = "for (const a of document.links) a.hash = location.hash;" if cfg.static.api else None
     dst.write_text(
         f'<!doctype html><html lang="{E(cfg.page.lang)}" dir="{E(cfg.page.dir)}"><meta charset="utf-8">'
-        f'<meta http-equiv="Content-Security-Policy" content="{E(_csp(None))}">'
+        f'<meta http-equiv="Content-Security-Policy" content="{E(_csp(js))}">'
         f'<meta name="viewport" content="width=device-width, initial-scale=1"><title>{E(cfg.page.title)}</title>'
-        f"<style>{_template('page.css')}</style><body><main><h1>{E(cfg.page.title)}</h1><ul>{rows or '<li class=mut>no reports yet</li>'}</ul></main></body></html>",
+        f"<style>{_template('page.css')}</style><body><main><h1>{E(cfg.page.title)}</h1><ul>{rows or '<li class=mut>no reports yet</li>'}</ul></main>"
+        + (f"<script>{js}</script>" if js else "")
+        + "</body></html>",
         encoding="utf-8",
     )
     return dst

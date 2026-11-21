@@ -47,7 +47,7 @@ def test_manifests_agree_on_name_and_version():
 
 def test_every_skill_and_command_says_when_to_use_it():
     skills = sorted((ROOT / "skills").glob("*/SKILL.md"))
-    assert {p.parent.name for p in skills} == {"review-loop", "remote-review", "job-hygiene"}
+    assert {p.parent.name for p in skills} == {"review-loop", "remote-review", "static-review", "job-hygiene"}
     for p in skills:
         fm = front_matter(p)
         assert fm["name"] == p.parent.name, p

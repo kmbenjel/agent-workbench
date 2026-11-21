@@ -78,6 +78,21 @@ class RemoteConfig:
 
 
 @dataclass
+class StaticConfig:
+    """Pages on any static host, remarks through a small comment backend (docs/guides/static-review.md)."""
+
+    api: str = ""  # the comment backend, e.g. "https://awb-comments.example.workers.dev"; empty = off
+    page_url: str = ""  # where the site directory is published, e.g. "https://reviews.example.org"
+    review_key: str = ""  # or AWB_REVIEW_KEY: the reviewer's key, carried by the link after "#k="
+    agent_token: str = ""  # or AWB_STATIC_TOKEN: lets the agent read remarks and post news
+    publish_cmd: str = (
+        ""  # uploads the site; {site} is its directory, e.g. "rsync -a {site}/ host:/var/www/r/"
+    )
+    sync_seconds: float = 20.0
+    timeout_seconds: float = 20.0
+
+
+@dataclass
 class GovernorConfig:
     max_workers: int = 6
     workers_file: str = "workers"  # relative to the workspace; jobs read it before starting each unit of work
@@ -219,6 +234,7 @@ SECTIONS: dict[str, type] = {
     "page": PageConfig,
     "review": ReviewConfig,
     "remote": RemoteConfig,
+    "static": StaticConfig,
     "governor": GovernorConfig,
     "netpace": NetpaceConfig,
     "queue": QueueConfig,
@@ -236,6 +252,7 @@ class Config:
     page: PageConfig = field(default_factory=PageConfig)
     review: ReviewConfig = field(default_factory=ReviewConfig)
     remote: RemoteConfig = field(default_factory=RemoteConfig)
+    static: StaticConfig = field(default_factory=StaticConfig)
     governor: GovernorConfig = field(default_factory=GovernorConfig)
     netpace: NetpaceConfig = field(default_factory=NetpaceConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
@@ -330,6 +347,21 @@ def parse(data: dict[str, Any], root: Path) -> Config:
             setattr(cfg, attr, os.environ[env])
     if os.environ.get("AWB_BASE_REMARKS") and not cfg.server.base_remarks:
         cfg.server.base_remarks = os.environ["AWB_BASE_REMARKS"]
+    for env, attr in (("AWB_REVIEW_KEY", "review_key"), ("AWB_STATIC_TOKEN", "agent_token")):
+        if os.environ.get(env) and not getattr(cfg.static, attr):
+            setattr(cfg.static, attr, os.environ[env])
+    for key in ("api", "page_url"):
+        url = getattr(cfg.static, key).rstrip("/")
+        if url and not url.startswith(("https://", "http://")):
+            raise ConfigError(f"[static].{key}: expected an http(s) URL, got {url!r}")
+        setattr(cfg.static, key, url)
+    api = cfg.static.api  # the keys travel in a header: plain http only to this machine
+    if api.startswith("http://") and api[7:].split("/")[0].rsplit(":", 1)[0] not in (
+        "127.0.0.1",
+        "localhost",
+        "[::1]",
+    ):
+        raise ConfigError(f"[static].api: use https ({api!r} would send the keys in the clear)")
     return cfg
 
 

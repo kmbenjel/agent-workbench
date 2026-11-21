@@ -55,8 +55,27 @@ A card's *revision* is its `rev` field, or a hash of title, subtitle, body, imag
 the revision it judged. A card whose latest remark is an approval of the current revision, or that was closed at the
 current revision, is hidden. If the content changes, the card returns marked "changed since your last judgment".
 
+## The HTTP API
+
+The page reads and writes through four requests, the same whether `awb serve` answers them next to the page or a
+comment backend answers them for a page on a static host ([guide](guides/static-review.md)). JSON in, JSON out.
+
+| Request | Body | Answer |
+|---|---|---|
+| `GET /api/remarks?report=R` | | `{card: latest remark}` for report `R` (`_news` for answers to news) |
+| `POST /api/remark` | `{report, card, verdict, comment, rev}`, `Content-Type: application/json`, at most 64 KB | `{"ok": true, "time": "..."}`; the server sets `time` |
+| `GET /api/news` | | the news items, oldest first |
+| `PUT /api/news` | the news items (static backends only: `awb static sync` sends them) | `{"ok": true}` |
+
+Any other status than 2xx is a failure and the page shows it as one. `awb serve` authenticates by loopback (or a
+token cookie) and adds `GET /api/status`. A static backend takes `Authorization: Bearer <key>`: the reviewer's key
+may read and post remarks and read news; the agent's token may read remarks and put news. A backend keeps the
+latest remark per `(report, card)`; `awb static sync` appends what is new to `remarks.jsonl`, keeping the
+backend's `time`.
+
 ## Watch output
 
 `awb watch` prints one line per settled remark: `REMARK <report> <card> verdict=<approve|reject|none> «comment»`
 (`REPLY` for `_news`), or the raw JSON with `--json`. A remark settles after `settle_seconds` without change.
-The read position is saved in `watch.pos`.
+The read position is saved in `watch.pos`. One watcher streams a workspace at a time (`watch.lock`): a second one
+prints which process holds the stream and exits with status 3; `--shared` streams anyway.

@@ -16,6 +16,7 @@ agent-workbench: a human-in-the-loop kit for long AI-agent jobs.
 
   review loop   page build | serve | watch | remarks | news | close | status
   remote        remote up | sync | down | url      (serve the page from a cloud machine over ssh)
+  static        static publish | sync | loop | url (pages on any static host, a small comment backend)
   job hygiene   governor | calm wait | netguard | queue run | run | power
   agents        mcp    (an MCP server: post_news, read_remarks, make_review_page, close_card)
 
@@ -110,6 +111,15 @@ def build_parser() -> argparse.ArgumentParser:
         ("loop", "sync every sync_seconds until the machine stops"),
     ):
         rm.add_parser(n, help=h)
+
+    st = sub.add_parser(
+        "static", help="pages on any static host, remarks through a small comment backend"
+    ).add_subparsers(dest="sub", required=True)
+    st.add_parser("publish", help="upload the site directory with [static] publish_cmd")
+    st.add_parser("sync", help="one round: pull new remarks into remarks.jsonl, push the news panel")
+    st.add_parser("loop", help="sync every sync_seconds (run it beside awb watch)")
+    p = st.add_parser("url", help="print the reviewer's link, with the key")
+    p.add_argument("report", nargs="?", help="a report name (default: the index)")
 
     p = sub.add_parser(
         "governor", help="memory governor: pause or kill the largest heavy process before the machine dies"
@@ -294,6 +304,23 @@ def dispatch(a: argparse.Namespace, cfg: Config) -> int:
             else:
                 r.loop()
         except RemoteError as e:
+            print(f"awb: {e}", file=sys.stderr)
+            return 1
+    elif cmd == "static":
+        from .static import StaticError, StaticReview
+
+        try:
+            s = StaticReview(cfg)
+            if a.sub == "publish":
+                said = s.publish()
+                print(said + ("\n" if said else "") + f"published {cfg.site_dir}")
+            elif a.sub == "sync":
+                print(s.sync())
+            elif a.sub == "url":
+                print(s.url(page.report_name(a.report) if a.report else None))
+            else:
+                s.loop(lambda line: print(line, flush=True))
+        except StaticError as e:
             print(f"awb: {e}", file=sys.stderr)
             return 1
     elif cmd == "governor":

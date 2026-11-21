@@ -33,6 +33,13 @@ auto_stop = true           # stop the machine when no card is open any more
 # command:  status_cmd = "my-cloud status"   # prints RUNNING when up
 #           address_cmd = "my-cloud ip"  start_cmd = "my-cloud start"  stop_cmd = "my-cloud stop"
 
+# [static]                 # pages on any static host + a small comment backend (docs/guides/static-review.md)
+# api = "https://awb-comments.example.workers.dev"   # the backend; set, pages are built to talk to it
+# page_url = "https://reviews.example.org"           # where the site directory is published
+# publish_cmd = "rsync -a {site}/ host:/var/www/reviews/"   # or wrangler pages deploy, aws s3 sync, gsutil rsync ...
+# sync_seconds = 20
+# keys come from the environment, not from this file: AWB_REVIEW_KEY (reviewer), AWB_STATIC_TOKEN (agent)
+
 [governor]                 # `awb governor`: protect the machine from the jobs
 max_workers = 6
 keep_gb = 2.5              # memory kept free for the person's own applications

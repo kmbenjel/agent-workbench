@@ -11,6 +11,8 @@
 
 Show only what is really doubtful: review your own cards first, and put your opinion in `why`.
 
-Without a server the page still works as a file: ticks stay in the browser (useful for a static demo).
+Without a server the page still works, as a file or from any static host: it says so and keeps ticks in the
+browser (useful for a static demo). To have those ticks reach the agent from a static host, see
+[static review](static-review.md).
 
 Other languages: set `[page] lang = "ar"`, `dir = "rtl"` and translate any label under `[page.labels]`.

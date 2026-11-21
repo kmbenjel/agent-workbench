@@ -27,7 +27,7 @@ order: 14
 
 | الجزء | وظيفته |
 |---|---|
-| المهارات | `review-loop` و`remote-review` و`job-hygiene` |
+| المهارات | `review-loop` و`remote-review` و`static-review` و`job-hygiene` |
 | الأمر `awb` | يأتي مع الإضافة (`bin/awb`) ويكون في `PATH` الوكيل ما دامت مفعّلة، فلا تثبيت آخر |
 | المراقِب `remarks` | يبدأ `awb watch` أول مرة تُستدعى فيها مهارة `review-loop` |
 | خادم MCP | الأدوات الأربع أدناه |

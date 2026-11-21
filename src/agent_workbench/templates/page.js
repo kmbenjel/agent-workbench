@@ -1,11 +1,22 @@
 const CFG = JSON.parse(document.getElementById('awb-cfg').textContent);
 const L = CFG.labels, R = CFG.report;
-// live: a review server answers next to the page. Opened as a file, or from a host that only serves files, the
-// page keeps ticks and comments in this browser instead (load() decides on the first request).
-let live = location.protocol.startsWith('http');
+// Where remarks go: the review server next to the page (awb serve), or, for a page published on a static host,
+// the comment backend named at build time (CFG.api). That one is on another origin, so the reviewer's key comes
+// in the link ("#k=...") and travels as a bearer token; it is remembered here so the other pages open too.
+const BASE = CFG.api ? CFG.api.replace(/\/+$/, '') + '/api/' : 'api/';
+let KEY = '';
+if (CFG.api) {
+  const m = /(?:^#|&)k=([^&]*)/.exec(location.hash);
+  try { if (m) localStorage.setItem('awb:key:' + CFG.api, KEY = decodeURIComponent(m[1])); else KEY = localStorage.getItem('awb:key:' + CFG.api) || ''; }
+  catch (e) { if (m) KEY = m[1]; }
+}
+// live: a server answers. Opened as a file, or from a host that only serves files, the page keeps ticks and
+// comments in this browser instead (load() decides on the first request).
+let live = !!CFG.api || location.protocol.startsWith('http'), why = '';
 const $ = (s, r) => (r || document).querySelector(s), $$ = (s, r) => [...(r || document).querySelectorAll(s)];
 // a refusal (403, 413 ...) is an error, never "saved"
-const api = (path, opt) => fetch('api/' + path, opt).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+const api = (path, opt = {}) => fetch(BASE + path, {...opt, headers: {...opt.headers, ...(KEY ? {Authorization: 'Bearer ' + KEY} : {})}})
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
 const post = (report, card, verdict, comment, rev) => api('remark', {method: 'POST',
   headers: {'Content-Type': 'application/json'}, body: JSON.stringify({report, card, verdict, comment, rev})});
 const hhmm = t => String(t || '').slice(11, 19);
@@ -53,17 +64,22 @@ async function load() {
     try {
       const d = await api('remarks?report=' + encodeURIComponent(R));
       fill(id => d[id], x => L.saved + ' ' + hhmm(x.time));
-    } catch (e) { live = false; }  // no review server answers here: say so and keep the work in this browser
+    } catch (e) { live = false; why = e.message; }  // nothing answers: say so, keep the work in this browser
   }
-  if (!live) { $('#noserver').hidden = false; fill(id => mem.get(id), () => L.local); }
+  if (!live) {
+    const w = $('#noserver');
+    if (CFG.api) w.textContent = /^40[13]$/.test(why) ? L.nokey : L.offline;
+    w.hidden = false; fill(id => mem.get(id), () => L.local);
+  }
   progress();
 }
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 let typing = false;
 async function news() {
   try {
-    const [items, rep] = live ? await Promise.all([api('news'), api('remarks?report=_news')])
-                              : [CFG.news || [], Object.fromEntries((CFG.news || []).map(n => [n.id, mem.get('news:' + n.id) || {}]))];
+    let [items, rep] = live ? await Promise.all([api('news'), api('remarks?report=_news')])
+                            : [CFG.news || [], Object.fromEntries((CFG.news || []).map(n => [n.id, mem.get('news:' + n.id) || {}]))];
+    if (!items.length) items = CFG.news || [];  // a comment backend that has no news yet: what the page was built with
     const box = $('#news'); if (!items.length) { box.hidden = true; return; }
     if (typing) return;
     box.hidden = false;

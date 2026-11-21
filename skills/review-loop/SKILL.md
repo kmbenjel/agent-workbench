@@ -23,7 +23,8 @@ on your shell's `PATH`: there is nothing to install.
 2. **Show only what is really doubtful.** Do your own review first. Cards you are sure of are not the reviewer's job;
    ask about the doubtful ones, with your opinion on the card (`why`). A page of a thousand cards is not reviewed.
 3. **Serve.** `awb serve` (127.0.0.1 only) and give the reviewer the URL `http://127.0.0.1:8765/NAME.html`. For a
-   reviewer on another device, or a laptop that sleeps, use the `remote-review` skill.
+   reviewer on another device, or a laptop that sleeps, use the `remote-review` skill (your own machine, over ssh)
+   or the `static-review` skill (the page on a static host, an ordinary https link).
 4. **Tell them on the page.** `awb news post "what I did / what I need" --kind info|question|done`. Questions get an
    answer box on the page. People do not read the terminal: anything they must see goes into news, not into chat.
 5. **Watch.** Each remark must reach you as a notification, once the reviewer stops typing (45 s by default).

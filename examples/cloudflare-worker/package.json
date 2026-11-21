@@ -1,0 +1,11 @@
+{
+  "name": "awb-comments",
+  "private": true,
+  "type": "module",
+  "description": "agent-workbench comment backend for review pages on a static host (Cloudflare Worker + R2)",
+  "license": "MIT",
+  "scripts": {
+    "dev": "node dev-server.mjs",
+    "deploy": "wrangler deploy"
+  }
+}
