@@ -8,6 +8,7 @@ plugin and a plain CLI, standard library only.
 [![PyPI](https://img.shields.io/pypi/v/agent-workbench.svg)](https://pypi.org/project/agent-workbench/)
 [![Python](https://img.shields.io/pypi/pyversions/agent-workbench.svg)](https://pypi.org/project/agent-workbench/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Arabic docs](https://img.shields.io/badge/docs-%D8%A7%D9%84%D8%B9%D8%B1%D8%A8%D9%8A%D8%A9-0a7)](https://warraq.benjelloun.dev/agent-workbench/)
 
 ![The review loop: the agent posts cards, the human ticks, the agent acts](docs/media/review-loop.gif)
 
