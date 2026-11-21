@@ -1,10 +1,14 @@
-.PHONY: install test lint demo demo-site media clean
+.PHONY: install test test-browser lint demo demo-site media clean
 
 install:
 	uv venv -q .venv && VIRTUAL_ENV=$$PWD/.venv uv pip install -q -e '.[dev]'
 
 test:
 	.venv/bin/python -m pytest --cov=agent_workbench --cov-report=term-missing
+
+# the page in headless Chrome, and the static loop against the Worker (needs Chrome and Node; run it on a VM)
+test-browser:
+	AWB_BROWSER=1 .venv/bin/python -m pytest tests/test_browser.py tests/test_static.py
 
 lint:
 	.venv/bin/ruff check src tests scripts bench && .venv/bin/ruff format --check src tests

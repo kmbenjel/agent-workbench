@@ -7,7 +7,7 @@ Thanks for helping. The project is small on purpose: standard library only at ru
 ```bash
 git clone https://github.com/kmbenjel/agent-workbench && cd agent-workbench
 make install        # a venv in .venv with the dev tools (pytest, coverage, ruff)
-make test           # about 5 seconds
+make test           # about 10 seconds
 make lint
 ```
 
@@ -22,7 +22,9 @@ Python 3.10 to 3.13 are supported (`tomli` is the only dependency, and only on 3
 - Keep the JSONL protocol backward compatible (`docs/protocol.md`); add fields, do not change meanings; bump `v`
   only for a breaking change.
 - Heavy work (benchmarks, media rendering, competitor installs) is run on a separate machine, not a laptop in use.
-- Security-relevant changes (server, remote, queue targets) need a test that shows the refused case.
+- Security-relevant changes (server, remote, queue targets, the comment backend) need a test that shows the
+  refused case. What only a browser can show (the page's policy, a cross-origin save) goes in
+  `tests/test_browser.py` (`make test-browser`, headless Chrome).
 
 ## Pull requests
 

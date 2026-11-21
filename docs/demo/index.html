@@ -1,4 +1,5 @@
 <!doctype html><html lang="en" dir="ltr"><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="script-src &#x27;sha256-+WZ+sUZUyy8Xh0i5IMqitCWaV0UetcImNLfpPZCBNE8=&#x27;; object-src &#x27;none&#x27;; base-uri &#x27;none&#x27;; form-action &#x27;none&#x27;">
 <meta name="viewport" content="width=device-width, initial-scale=1"><title>OCR fixes to confirm</title>
 <style>:root{--bg:#f7f7f4;--fg:#1d1f21;--mut:#6a6f76;--card:#fff;--line:#dcdcd5;--acc:#1f6feb;--ok:#1a7f37;--bad:#c62828;--chg:#9a6700;--news:#eef4ff}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#15171a;--fg:#e6e6e3;--mut:#9aa0a6;--card:#1e2125;--line:#33373d;--acc:#6ea8ff;--ok:#56d364;--bad:#ff7b72;--chg:#e3b341;--news:#1b2a40}}
@@ -55,13 +56,29 @@ textarea{flex:1;min-width:200px;font:inherit;background:var(--bg);color:var(--fg
 <article data-card="line-7" data-rev="242e82ff37" class="open"><div class="head"><span class="n">7</span><div><div class="title">neighbourhood  →  neighborhood</div><div class="mut">line 7 of 7 · confidence 0.31</div><div class="why">a spelling change: only if the whole book is modernised</div></div></div><div class="body"><p>OCR read:  neighbourhood</p><p>Proposed:  neighborhood</p></div><div class="pics"><a href="ocr-fixes/fa3b6347-1.svg" target="_blank" rel="noopener"><img loading="lazy" src="ocr-fixes/fa3b6347-1.svg" alt=""></a></div><div class="act"><button class="yes" data-v="approve" aria-pressed="false">Approve</button><button class="no" data-v="reject" aria-pressed="false">Reject</button><textarea rows="2" placeholder="Comment (optional)"></textarea><span class="st"></span></div></article>
 <p class="mut"></p>
 </main>
-<script type="application/json" id="awb-cfg">{"report": "ocr-fixes", "labels": {"approve": "Approve", "reject": "Reject", "comment": "Comment (optional)", "news": "News from the agent", "reply": "Your answer", "progress": "{done} of {total} reviewed", "all": "All", "open": "Open", "approved": "Approved", "rejected": "Rejected", "saving": "saving…", "saved": "saved", "failed": "not saved", "changed": "changed since your last judgment", "local": "kept in this browser", "kind_info": "info", "kind_question": "question", "kind_done": "done", "no_cards": "Nothing to review. Thank you."}, "news": [{"v": 1, "id": "n913db9", "time": "2026-11-13T01:22:46Z", "kind": "question", "text": "I corrected 212 OCR errors by dictionary and kept these 7 for your eye. Question: should spelling follow the printed edition (British) or be modernised?", "title": "Seven lines to confirm", "card": ""}]}</script>
+<script type="application/json" id="awb-cfg">{"report": "ocr-fixes", "labels": {"approve": "Approve", "reject": "Reject", "comment": "Comment (optional)", "news": "News from the agent", "reply": "Your answer", "progress": "{done} of {total} reviewed", "all": "All", "open": "Open", "approved": "Approved", "rejected": "Rejected", "saving": "saving…", "saved": "saved", "failed": "not saved", "changed": "changed since your last judgment", "nokey": "This link carries no valid review key, so nothing reaches the agent: open the full link you were given. Until then your ticks and comments stay in this browser only.", "offline": "The comment service does not answer: your ticks and comments stay in this browser only. Reload the page to try again.", "local": "kept in this browser", "kind_info": "info", "kind_question": "question", "kind_done": "done", "no_cards": "Nothing to review. Thank you."}, "news": [{"v": 1, "id": "n92ba64", "time": "2026-11-21T01:05:56Z", "kind": "question", "text": "I corrected 212 OCR errors by dictionary and kept these 7 for your eye. Question: should spelling follow the printed edition (British) or be modernised?", "title": "Seven lines to confirm", "card": ""}]}</script>
 <script>const CFG = JSON.parse(document.getElementById('awb-cfg').textContent);
-const L = CFG.labels, R = CFG.report, live = location.protocol.startsWith('http');
+const L = CFG.labels, R = CFG.report;
+// Where remarks go: the review server next to the page (awb serve), or, for a page published on a static host,
+// the comment backend named at build time (CFG.api). That one is on another origin, so the reviewer's key comes
+// in the link ("#k=...") and travels as a bearer token; it is remembered here so the other pages open too.
+const BASE = CFG.api ? CFG.api.replace(/\/+$/, '') + '/api/' : 'api/';
+let KEY = '';
+if (CFG.api) {
+  const m = /(?:^#|&)k=([^&]*)/.exec(location.hash);
+  try { if (m) localStorage.setItem('awb:key:' + CFG.api, KEY = decodeURIComponent(m[1])); else KEY = localStorage.getItem('awb:key:' + CFG.api) || ''; }
+  catch (e) { if (m) KEY = m[1]; }
+}
+// live: a server answers. Opened as a file, or from a host that only serves files, the page keeps ticks and
+// comments in this browser instead (load() decides on the first request).
+let live = !!CFG.api || location.protocol.startsWith('http'), why = '';
 const $ = (s, r) => (r || document).querySelector(s), $$ = (s, r) => [...(r || document).querySelectorAll(s)];
-const post = (report, card, verdict, comment, rev) => fetch('api/remark', {method: 'POST',
-  headers: {'Content-Type': 'application/json'}, body: JSON.stringify({report, card, verdict, comment, rev})}).then(r => r.json());
-const hhmm = t => (t || '').slice(11, 19);
+// a refusal (403, 413 ...) is an error, never "saved"
+const api = (path, opt = {}) => fetch(BASE + path, {...opt, headers: {...opt.headers, ...(KEY ? {Authorization: 'Bearer ' + KEY} : {})}})
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+const post = (report, card, verdict, comment, rev) => api('remark', {method: 'POST',
+  headers: {'Content-Type': 'application/json'}, body: JSON.stringify({report, card, verdict, comment, rev})});
+const hhmm = t => String(t || '').slice(11, 19);
 const fmt = (s, o) => s.replace(/\{(\w+)\}/g, (_, k) => o[k]);
 function state(a) { return a.dataset.verdict === 'approve' ? 'approved' : a.dataset.verdict === 'reject' ? 'rejected' : a.dataset.changed ? 'changed' : 'open'; }
 function paint(a) {
@@ -96,38 +113,44 @@ $$('article').forEach(a => {
   $$('button', a).forEach(b => b.onclick = () => { a.dataset.verdict = a.dataset.verdict === b.dataset.v ? '' : b.dataset.v; paint(a); save(a); });
   t.addEventListener('input', () => { clearTimeout(tm); tm = setTimeout(() => save(a), 800); });
 });
+function fill(get, note) {
+  $$('article').forEach(a => { const x = get(a.dataset.card); if (!x) return;
+    a.dataset.verdict = x.verdict || ''; $('textarea', a).value = x.comment || '';
+    $('.st', a).textContent = note(x); paint(a); });
+}
 async function load() {
-  if (!live) {
-    $('#noserver').hidden = false;
-    $$('article').forEach(a => { const x = mem.get(a.dataset.card); if (!x) return;
-      a.dataset.verdict = x.verdict || ''; $('textarea', a).value = x.comment || ''; paint(a); });
-    progress(); return;
+  if (live) {
+    try {
+      const d = await api('remarks?report=' + encodeURIComponent(R));
+      fill(id => d[id], x => L.saved + ' ' + hhmm(x.time));
+    } catch (e) { live = false; why = e.message; }  // nothing answers: say so, keep the work in this browser
   }
-  try {
-    const d = await (await fetch('api/remarks?report=' + encodeURIComponent(R))).json();
-    $$('article').forEach(a => { const x = d[a.dataset.card]; if (!x) return;
-      a.dataset.verdict = x.verdict || ''; $('textarea', a).value = x.comment || '';
-      $('.st', a).textContent = L.saved + ' ' + hhmm(x.time); paint(a); });
-  } catch (e) { $('#noserver').hidden = false; }
+  if (!live) {
+    const w = $('#noserver');
+    if (CFG.api) w.textContent = /^40[13]$/.test(why) ? L.nokey : L.offline;
+    w.hidden = false; fill(id => mem.get(id), () => L.local);
+  }
   progress();
 }
-const esc = s => s.replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 let typing = false;
 async function news() {
   try {
-    const [items, rep] = live ? await Promise.all([fetch('api/news').then(r => r.json()), fetch('api/remarks?report=_news').then(r => r.json())])
-                              : [CFG.news || [], Object.fromEntries((CFG.news || []).map(n => [n.id, mem.get('news:' + n.id) || {}]))];
+    let [items, rep] = live ? await Promise.all([api('news'), api('remarks?report=_news')])
+                            : [CFG.news || [], Object.fromEntries((CFG.news || []).map(n => [n.id, mem.get('news:' + n.id) || {}]))];
+    if (!items.length) items = CFG.news || [];  // a comment backend that has no news yet: what the page was built with
     const box = $('#news'); if (!items.length) { box.hidden = true; return; }
     if (typing) return;
     box.hidden = false;
-    $('#newslist').innerHTML = items.slice(-6).reverse().map(n => `<div class="item" data-id="${n.id}">
-      <span class="kind k-${n.kind}">${esc(L['kind_' + n.kind] || n.kind)}</span> <span class="mut" dir="ltr" style="unicode-bidi:isolate">${esc(n.time.slice(5, 16).replace('T', ' '))}</span>
+    $('#newslist').innerHTML = items.slice(-6).reverse().map(n => `<div class="item" data-id="${esc(n.id)}">
+      <span class="kind k-${esc(n.kind)}">${esc(L['kind_' + n.kind] || n.kind)}</span> <span class="mut" dir="ltr" style="unicode-bidi:isolate">${esc(String(n.time || '').slice(5, 16).replace('T', ' '))}</span>
       ${n.title ? '<b>' + esc(n.title) + '</b>' : ''}<div>${esc(n.text)}</div>
       ${n.kind === 'question' ? `<textarea rows="2" placeholder="${esc(L.reply)}">${esc((rep[n.id] || {}).comment || '')}</textarea>` : ''}</div>`).join('');
     $$('#newslist textarea').forEach(t => { let tm; const id = t.closest('.item').dataset.id;
       t.addEventListener('input', () => { typing = true; clearTimeout(tm); tm = setTimeout(() => {
-        if (live) post('_news', id, '', t.value, '').then(() => typing = false); else { mem.set('news:' + id, {comment: t.value}); typing = false; } }, 800); }); });
+        if (live) post('_news', id, '', t.value, '').catch(() => {}).then(() => typing = false);
+        else { mem.set('news:' + id, {comment: t.value}); typing = false; } }, 800); }); });
   } catch (e) { /* the server may be away for a moment */ }
 }
-load(); news(); if (live) setInterval(news, 8000);
+load().then(() => { news(); if (live) setInterval(news, 8000); });
 </script></body></html>

@@ -15,7 +15,7 @@ def running(cfg, report_cards):
     page.save_report(cfg, "rep", report_cards)
     page.build_page(cfg, "rep")
     srv = make_server(cfg, "127.0.0.1", 0)
-    t = threading.Thread(target=srv.serve_forever, daemon=True)
+    t = threading.Thread(target=srv.serve_forever, kwargs={"poll_interval": 0.02}, daemon=True)
     t.start()
     yield cfg, f"http://127.0.0.1:{srv.server_address[1]}"
     srv.shutdown()
@@ -105,7 +105,7 @@ def test_token_cookie_flow(tmp_path, report_cards):
     page.save_report(cfg, "rep", report_cards)
     page.build_page(cfg, "rep")
     srv = make_server(cfg, "127.0.0.1", 0)
-    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    threading.Thread(target=srv.serve_forever, kwargs={"poll_interval": 0.02}, daemon=True).start()
     base = f"http://127.0.0.1:{srv.server_address[1]}"
     try:
         assert call(base + "/rep.html")[0] == 403
@@ -136,7 +136,7 @@ def test_base_remarks_are_merged(tmp_path, report_cards):
     cfg = parse({"server": {"base_remarks": str(base_f)}}, tmp_path)
     page.save_report(cfg, "rep", report_cards)
     srv = make_server(cfg, "127.0.0.1", 0)
-    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    threading.Thread(target=srv.serve_forever, kwargs={"poll_interval": 0.02}, daemon=True).start()
     try:
         _, body = call(f"http://127.0.0.1:{srv.server_address[1]}/api/remarks?report=rep")
         assert json.loads(body)["c1"]["comment"] == "from laptop"
@@ -216,7 +216,7 @@ def with_token(tmp_path, report_cards):
 
     def start(host="127.0.0.1"):
         srv = make_server(cfg, host, 0)
-        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        threading.Thread(target=srv.serve_forever, kwargs={"poll_interval": 0.02}, daemon=True).start()
         started.append(srv)
         return f"http://{host}:{srv.server_address[1]}"
 

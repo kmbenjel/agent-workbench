@@ -19,6 +19,20 @@ jobs:
       - run: ruff check src tests scripts bench
       - run: ruff format --check src tests
       - run: pytest --cov=agent_workbench --cov-report=term-missing
+  browser:
+    # the page in headless Chrome and the static loop against the Worker's code (Chrome and Node are on the runner)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e '.[dev]'
+      - run: node --check examples/cloudflare-worker/worker.js && node --check examples/cloudflare-worker/dev-server.mjs
+      - run: pytest tests/test_browser.py tests/test_static.py -rs
+        env:
+          AWB_BROWSER: "1"
   plugin:
     runs-on: ubuntu-latest
     steps:
