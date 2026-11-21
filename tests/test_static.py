@@ -132,6 +132,9 @@ def test_errors_say_what_to_fix(tmp_path, report_cards):
         parse({"static": {"api": "comments.example"}}, tmp_path)
     with pytest.raises(ConfigError, match="use https"):  # the keys travel in a header
         parse({"static": {"api": "http://comments.example"}}, tmp_path)
+    with pytest.raises(ConfigError, match="user name"):  # "localhost:80" is a user name here, not the host
+        parse({"static": {"api": "http://localhost:80@comments.example"}}, tmp_path)
+    assert parse({"static": {"api": "http://[::1]"}}, tmp_path).static.api == "http://[::1]"
     assert (
         parse({"static": {"api": "http://localhost:8787/"}}, tmp_path).static.api == "http://localhost:8787"
     )

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import dataclasses
 import os
+import urllib.parse
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -355,13 +356,16 @@ def parse(data: dict[str, Any], root: Path) -> Config:
         if url and not url.startswith(("https://", "http://")):
             raise ConfigError(f"[static].{key}: expected an http(s) URL, got {url!r}")
         setattr(cfg.static, key, url)
-    api = cfg.static.api  # the keys travel in a header: plain http only to this machine
-    if api.startswith("http://") and api[7:].split("/")[0].rsplit(":", 1)[0] not in (
-        "127.0.0.1",
-        "localhost",
-        "[::1]",
-    ):
-        raise ConfigError(f"[static].api: use https ({api!r} would send the keys in the clear)")
+    # the keys travel in a header: plain http only to this machine
+    try:
+        api = urllib.parse.urlsplit(cfg.static.api)
+        api.port  # noqa: B018 - parses the port: a bad one raises here, not at the first request
+    except ValueError as e:
+        raise ConfigError(f"[static].api: {e} ({cfg.static.api!r})") from None
+    if api.username is not None or api.password is not None:
+        raise ConfigError(f"[static].api: no user name or password in the URL ({cfg.static.api!r})")
+    if api.scheme == "http" and api.hostname not in ("127.0.0.1", "localhost", "::1"):
+        raise ConfigError(f"[static].api: use https ({cfg.static.api!r} would send the keys in the clear)")
     return cfg
 
 
