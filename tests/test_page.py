@@ -89,3 +89,54 @@ def test_rtl_and_labels_come_from_config(tmp_path, report_cards):
     page.save_report(cfg, "r", report_cards)
     html = page.build_page(cfg, "r").read_text()
     assert 'dir="rtl"' in html and "موافق" in html
+
+
+# -- hardening ------------------------------------------------------------------------------------------------
+def test_a_card_rev_cannot_break_out_of_its_attribute(cfg):
+    page.save_report(cfg, "x", {"cards": [{"id": "1", "rev": '"><img src=x onerror=alert(1)>'}]})
+    html = page.build_page(cfg, "x").read_text()
+    assert "<img src=x" not in html and 'data-rev="&quot;&gt;&lt;img' in html
+
+
+def test_placeholders_in_card_text_stay_text(cfg):
+    page.save_report(
+        cfg,
+        "x",
+        {
+            "title": "%%CARDS%%",
+            "intro": "%%JS%%",
+            "cards": [{"id": "1", "title": "%%CFG%%", "body": "%%CSS%% %%NEWS%%"}],
+        },
+    )
+    html = page.build_page(cfg, "x").read_text()
+    for name in ("CARDS", "JS", "CFG", "CSS", "NEWS"):
+        # still there as typed (the title shows twice: <title> and <h1>), and expanded nowhere else
+        assert html.count(f"%%{name}%%") == (2 if name == "CARDS" else 1), name
+    assert html.count("const CFG = JSON.parse") == 1 and html.count('data-card="1"') == 1
+
+
+def test_news_cannot_end_the_data_block(cfg, report_cards):
+    evil = "</script><script>alert(1)</script><!-- <script> &  "
+    store.post_news(cfg.news_file, evil, "info", title=evil[:100])
+    page.save_report(cfg, "rep", report_cards)
+    html = page.build_page(cfg, "rep").read_text()
+    block = html.split('<script type="application/json" id="awb-cfg">')[1].split("</script>")[0]
+    assert "<" not in block and ">" not in block and "&" not in block and " " not in block
+    assert json.loads(block)["news"][0]["text"] == evil.strip()  # and the reader gets the text back whole
+    assert html.count("<script") == 2
+
+
+def test_the_page_policy_allows_only_the_kit_script(cfg, report_cards):
+    import base64
+    import hashlib
+    import re
+
+    page.save_report(cfg, "rep", report_cards)
+    html = page.build_page(cfg, "rep").read_text()
+    csp = re.search(r'http-equiv="Content-Security-Policy" content="([^"]+)"', html).group(1)
+    script = html.rsplit("<script>", 1)[1].rsplit("</script>", 1)[0]
+    digest = base64.b64encode(hashlib.sha256(script.encode()).digest()).decode()
+    assert f"script-src &#x27;sha256-{digest}&#x27;" in csp and "unsafe-inline" not in csp
+    assert "object-src &#x27;none&#x27;" in csp and "base-uri &#x27;none&#x27;" in csp
+    index = page.build_index(cfg).read_text()
+    assert "script-src &#x27;none&#x27;" in index and "<script" not in index

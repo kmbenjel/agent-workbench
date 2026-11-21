@@ -12,6 +12,7 @@ and hidden cards never renumber the others.
 
 from __future__ import annotations
 
+import base64
 import csv
 import hashlib
 import html
@@ -60,6 +61,35 @@ def report_name(name: str) -> str:
 
 def _template(name: str) -> str:
     return resources.files("agent_workbench").joinpath("templates", name).read_text(encoding="utf-8")
+
+
+def _json_for_html(obj: Any) -> str:
+    """JSON that is safe inside a ``<script>`` data block whatever the strings hold: no ``<``, ``>`` or ``&``
+    is left for the HTML parser to act on (``</script>``, ``<!--``), and JSON reads the escapes back unchanged."""
+    return (
+        json.dumps(obj, ensure_ascii=False)
+        .replace("<", "\\u003c")
+        .replace(">", "\\u003e")
+        .replace("&", "\\u0026")
+        .replace("\u2028", "\\u2028")
+        .replace("\u2029", "\\u2029")
+    )
+
+
+def _csp(script: str | None) -> str:
+    """The page's own policy: only the kit's script runs (by its hash), so text that slipped past the escaping
+    could still not execute; no plugins, no ``<base>``, no forms. Images, styles and fetches are not limited."""
+    src = (
+        "'sha256-" + base64.b64encode(hashlib.sha256(script.encode()).digest()).decode() + "'"
+        if script
+        else "'none'"
+    )
+    return f"script-src {src}; object-src 'none'; base-uri 'none'; form-action 'none'"
+
+
+def _fill(template: str, values: dict[str, str]) -> str:
+    """One pass over the template: a value is never scanned for placeholders, whatever a card's text holds."""
+    return re.sub(r"%%([A-Z_]+)%%", lambda m: values.get(m.group(1), m.group(0)), template)
 
 
 def load_cards(path: Path) -> dict[str, Any]:
@@ -183,7 +213,7 @@ def build_page(cfg: Config, name: str) -> Path:
         )
         body = "".join(f"<p>{E(par)}</p>" for par in str(c.get("body", "")).split("\n\n") if par.strip())
         out.append(
-            f'<article data-card="{E(str(c["id"]))}" data-rev="{card_rev(c)}"{" data-changed=1" if st == "changed" else ""} '
+            f'<article data-card="{E(str(c["id"]))}" data-rev="{E(card_rev(c))}"{" data-changed=1" if st == "changed" else ""} '
             f'class="{"changed" if st == "changed" else "open"}"><div class="head"><span class="n">{k}</span><div>'
             f'<div class="title">{E(str(c.get("title", c["id"])))}</div>'
             + (f'<div class="mut">{E(str(c["subtitle"]))}</div>' if c.get("subtitle") else "")
@@ -198,32 +228,29 @@ def build_page(cfg: Config, name: str) -> Path:
     if not out:
         out.append(f'<p class="mut">{E(labels["no_cards"])}</p>')
     ui = {k: v for k, v in labels.items() if k not in ("noserver", "closed")}
-    page = _template("page.html")
-    repl = {
-        "LANG": cfg.page.lang,
-        "DIR": cfg.page.dir,
-        "TITLE": E(str(data.get("title") or cfg.page.title)),
-        "INTRO": E(str(data.get("intro", ""))),
-        "NOSERVER": E(labels["noserver"]),
-        "CARDS": "\n".join(out),
-        "CLOSED": E(labels["closed"].format(n=hidden)) if hidden else "",
-        "NEWS": E(labels["news"]),
-        "F_ALL": E(labels["all"]),
-        "F_OPEN": E(labels["open"]),
-        "F_APPROVED": E(labels["approved"]),
-        "F_REJECTED": E(labels["rejected"]),
-        "IH": str(cfg.page.image_height),
-        "CSS": _template("page.css"),
-        "JS": _template("page.js"),
-        "CFG": json.dumps(
-            {"report": name, "labels": ui, "news": read_news(cfg.news_file, 6)}, ensure_ascii=False
-        ).replace("</", "<\\/"),
-    }
-    for k, v in repl.items():
-        page = page.replace(f"%%{k}%%", v) if k not in ("CSS", "JS", "CFG") else page
-    # CSS/JS/CFG go in last so their own text is never scanned for placeholders
-    for k in ("CSS", "JS", "CFG"):
-        page = page.replace(f"%%{k}%%", repl[k])
+    js = _template("page.js")
+    page = _fill(
+        _template("page.html"),
+        {
+            "LANG": E(cfg.page.lang),
+            "DIR": E(cfg.page.dir),
+            "CSP": E(_csp(js)),
+            "TITLE": E(str(data.get("title") or cfg.page.title)),
+            "INTRO": E(str(data.get("intro", ""))),
+            "NOSERVER": E(labels["noserver"]),
+            "CARDS": "\n".join(out),
+            "CLOSED": E(labels["closed"].format(n=hidden)) if hidden else "",
+            "NEWS": E(labels["news"]),
+            "F_ALL": E(labels["all"]),
+            "F_OPEN": E(labels["open"]),
+            "F_APPROVED": E(labels["approved"]),
+            "F_REJECTED": E(labels["rejected"]),
+            "IH": str(int(cfg.page.image_height)),
+            "CSS": _template("page.css"),
+            "JS": js,
+            "CFG": _json_for_html({"report": name, "labels": ui, "news": read_news(cfg.news_file, 6)}),
+        },
+    )
     cfg.site_dir.mkdir(parents=True, exist_ok=True)
     dst = cfg.site_dir / f"{name}.html"
     dst.write_text(page, encoding="utf-8")
@@ -239,7 +266,8 @@ def build_index(cfg: Config) -> Path:
     dst = cfg.site_dir / "index.html"
     cfg.site_dir.mkdir(parents=True, exist_ok=True)
     dst.write_text(
-        f'<!doctype html><html lang="{cfg.page.lang}" dir="{cfg.page.dir}"><meta charset="utf-8">'
+        f'<!doctype html><html lang="{E(cfg.page.lang)}" dir="{E(cfg.page.dir)}"><meta charset="utf-8">'
+        f'<meta http-equiv="Content-Security-Policy" content="{E(_csp(None))}">'
         f'<meta name="viewport" content="width=device-width, initial-scale=1"><title>{E(cfg.page.title)}</title>'
         f"<style>{_template('page.css')}</style><body><main><h1>{E(cfg.page.title)}</h1><ul>{rows or '<li class=mut>no reports yet</li>'}</ul></main></body></html>",
         encoding="utf-8",
