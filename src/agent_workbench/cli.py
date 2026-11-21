@@ -65,6 +65,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--once", action="store_true", help="print what is pending now and exit")
     p.add_argument("--from-start", action="store_true", help="first run: include remarks already on file")
     p.add_argument("--settle", type=float, help="seconds a remark must stay unchanged (default from config)")
+    p.add_argument(
+        "--shared",
+        action="store_true",
+        help="stream even if another watcher already does (each remark then reaches both)",
+    )
 
     p = sub.add_parser("remarks", help="read the latest remark per card")
     p.add_argument("--report")
@@ -199,8 +204,21 @@ def dispatch(a: argparse.Namespace, cfg: Config) -> int:
 
         serve(cfg, a.host, a.port)
     elif cmd == "watch":
-        from .watch import Watcher, format_line, run
+        from .watch import Watcher, WatcherBusy, format_line, run, take_lock
 
+        lock = None
+        if not (a.once or a.shared):
+            try:
+                lock = take_lock(cfg.ws / "watch.lock")
+            except WatcherBusy as e:
+                # on stdout too: a Monitor shows stdout, and the agent must learn why this one ended
+                msg = (
+                    f"awb watch: another watcher (pid {e}) already streams this workspace's remarks; "
+                    "they arrive where it runs. Not starting a second one (--shared to stream anyway)."
+                )
+                print(msg, flush=True)
+                print(msg, file=sys.stderr)
+                return 3
         w = Watcher(
             cfg.remarks_file,
             cfg.ws / "watch.pos",
@@ -216,6 +234,9 @@ def dispatch(a: argparse.Namespace, cfg: Config) -> int:
             run(w, lambda line: print(line, flush=True), a.json, cfg.review.poll_seconds)
         except KeyboardInterrupt:
             pass
+        finally:
+            if lock:
+                lock.close()
     elif cmd == "remarks":
         for r in review.read_remarks(cfg, a.report, unhandled=not a.all, since=a.since):
             from .watch import format_line

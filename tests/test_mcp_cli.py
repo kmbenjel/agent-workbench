@@ -90,7 +90,30 @@ def test_tool_errors_are_results_not_crashes(cfg):
     err, text = call(cfg, "post_news", text="x", kind="shout")
     assert err
     err, text = call(cfg, "post_news")  # missing required argument
+    assert err and "missing argument 'text'" in text
+    # wrong types are answers too: the server must outlive any input a model can produce
+    err, text = call(cfg, "make_review_page", report=7, cards=[{"id": "a"}])
     assert err
+    err, text = call(cfg, "make_review_page", report="x", cards="not a list")
+    assert err and "cards" in text
+    out = rpc(
+        cfg,
+        {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/call",
+            "params": {"name": "post_news", "arguments": [1]},
+        },
+        {"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": "nonsense"},
+        {"jsonrpc": "2.0", "id": 3, "method": "ping"},
+    )
+    assert out[0]["error"]["code"] == -32602 and out[1]["error"]["code"] == -32602 and out[2]["result"] == {}
+
+
+def test_read_remarks_is_marked_read_only():
+    by_name = {t["name"]: t for t in mcp_server.TOOLS}
+    assert by_name["read_remarks"]["annotations"] == {"readOnlyHint": True}
+    assert all("annotations" not in t for n, t in by_name.items() if n != "read_remarks")
 
 
 def test_mcp_over_a_real_pipe(tmp_path):

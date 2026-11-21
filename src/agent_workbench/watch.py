@@ -3,15 +3,19 @@
 People type into a box that saves as they go, so a remark is reported only once it has been unchanged for
 ``settle_seconds``. The read position is saved, so a restarted watcher loses nothing and repeats nothing. Run it
 as a Claude Code Monitor (each stdout line is a notification) or pipe it into any agent loop.
+
+One workspace has one stream of remarks and one saved position, so one watcher streams it at a time
+(:func:`take_lock`): a second one says who holds the stream and leaves, instead of repeating every line.
 """
 
 from __future__ import annotations
 
 import json
+import os
 import time
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import IO, Any
 
 from .store import has_content
 
@@ -32,6 +36,7 @@ class Watcher:
         except (OSError, ValueError):
             start = 0 if from_start else size
         self.pos = start
+        self.saved: int | None = None  # the position last written to pos_file
         self.seen: dict[
             tuple[str, str], tuple[str, str]
         ] = {}  # (report, card) -> (verdict, comment) already reported
@@ -79,10 +84,11 @@ class Watcher:
                 if self.seen.get(k) != v and (has_content(r) or k in self.seen):
                     self.seen[k] = v
                     out.append(r)
-        if not self.pending:
-            try:
+        if not self.pending and self.pos != self.saved and (self.pos or self.pos_file.parent.exists()):
+            try:  # only when it moved: an idle watcher writes nothing, and makes no workspace where none is
                 self.pos_file.parent.mkdir(parents=True, exist_ok=True)
                 self.pos_file.write_text(str(self.pos))
+                self.saved = self.pos
             except OSError:
                 pass
         return out
@@ -91,6 +97,38 @@ class Watcher:
         """Report everything pending now, settled or not (``awb watch --once``)."""
         self.settle = 0
         return self.poll()
+
+
+class WatcherBusy(RuntimeError):
+    """Another watcher already streams this workspace."""
+
+
+def take_lock(path: Path) -> IO[str] | None:
+    """Hold the workspace's watch lock for the life of the returned file (None where locks do not exist).
+
+    Raises :class:`WatcherBusy` with the holder's pid when another process has it. The lock is advisory and
+    dies with its process, so a killed watcher never blocks the next one."""
+    try:
+        import fcntl
+    except ImportError:  # pragma: no cover - Windows
+        return None
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fh = open(path, "a+", encoding="utf-8")  # noqa: SIM115 - kept open: the lock lives as long as the file
+    try:
+        fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        fh.seek(0)
+        pid = fh.read().strip() or "?"
+        fh.close()
+        raise WatcherBusy(pid) from None
+    except OSError:  # a filesystem without locks: watch anyway
+        fh.close()
+        return None
+    fh.seek(0)
+    fh.truncate()
+    fh.write(str(os.getpid()))
+    fh.flush()
+    return fh
 
 
 def format_line(r: dict[str, Any]) -> str:

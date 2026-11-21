@@ -133,3 +133,52 @@ def test_watch_lines_cross_a_pipe_at_once(tmp_path):
     finally:
         p.kill()
         p.wait()
+
+
+# -- one watcher per workspace --------------------------------------------------------------------------------
+posix = pytest.mark.skipif(sys.platform == "win32", reason="flock is POSIX")
+
+
+@posix
+def test_the_lock_names_its_holder_and_dies_with_it(tmp_path):
+    from agent_workbench.watch import WatcherBusy, take_lock
+
+    lock = tmp_path / "ws" / "watch.lock"
+    held = take_lock(lock)
+    assert lock.read_text() == str(os.getpid())
+    with pytest.raises(WatcherBusy, match=str(os.getpid())):
+        take_lock(lock)
+    held.close()
+    take_lock(lock).close()  # free again: a killed watcher never blocks the next one
+
+
+@posix
+def test_a_second_watcher_leaves_and_says_why(tmp_path, capsys):
+    from agent_workbench import cli
+    from agent_workbench.watch import take_lock
+
+    held = take_lock(tmp_path / ".workbench" / "watch.lock")
+    assert cli.main(["--root", str(tmp_path), "watch"]) == 3
+    out = capsys.readouterr()
+    assert f"pid {os.getpid()}" in out.out and "--shared" in out.out and out.err.strip() == out.out.strip()
+    # reading what is pending now needs no lock
+    add(tmp_path / ".workbench" / "remarks.jsonl", "a", "approve")
+    assert cli.main(["--root", str(tmp_path), "watch", "--once", "--from-start"]) == 0
+    assert "REMARK r a verdict=approve" in capsys.readouterr().out
+    held.close()
+
+
+def test_an_idle_watcher_writes_its_position_once_and_makes_no_workspace(tmp_path):
+    ws = tmp_path / "ws"
+    w = Watcher(ws / "remarks.jsonl", ws / "watch.pos", settle=0)
+    assert w.poll() == [] and not ws.exists()  # nothing to watch yet: no directory appears
+    ws.mkdir()
+    (ws / "remarks.jsonl").write_text("")
+    w.poll()
+    first = (ws / "watch.pos").stat().st_mtime_ns
+    assert (ws / "watch.pos").read_text() == "0"  # saved, so a restart reads from here, not from the end
+    w.poll()
+    assert (ws / "watch.pos").stat().st_mtime_ns == first  # unchanged position: no write
+    add(ws / "remarks.jsonl", "a", "approve")
+    assert [r["card"] for r in w.poll()] == ["a"]
+    assert int((ws / "watch.pos").read_text()) == (ws / "remarks.jsonl").stat().st_size

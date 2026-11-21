@@ -14,7 +14,7 @@ from typing import IO, Any
 from . import __version__, page, review, store
 from .config import Config
 
-SUPPORTED = ("2025-06-18", "2025-03-26", "2024-11-05")
+SUPPORTED = ("2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05")
 
 TOOLS: list[dict[str, Any]] = [
     {
@@ -45,6 +45,7 @@ TOOLS: list[dict[str, Any]] = [
                 "since": {"type": "string", "description": "ISO time; only remarks after it"},
             },
         },
+        "annotations": {"readOnlyHint": True},
     },
     {
         "name": "make_review_page",
@@ -109,6 +110,8 @@ def call_tool(cfg: Config, name: str, args: dict[str, Any]) -> Any:
 def handle(cfg: Config, msg: dict[str, Any]) -> dict[str, Any] | None:
     """One JSON-RPC message in, the response out (None for notifications)."""
     mid, method, params = msg.get("id"), msg.get("method", ""), msg.get("params") or {}
+    if not isinstance(params, dict):
+        params = {}
 
     def ok(result: Any) -> dict[str, Any]:
         return {"jsonrpc": "2.0", "id": mid, "result": result}
@@ -135,6 +138,8 @@ def handle(cfg: Config, msg: dict[str, Any]) -> dict[str, Any] | None:
         name, args = params.get("name"), params.get("arguments") or {}
         if name not in {t["name"] for t in TOOLS}:
             return err(-32602, f"unknown tool {name!r}")
+        if not isinstance(args, dict):
+            return err(-32602, "arguments must be an object")
         try:
             res = call_tool(cfg, name, args)
             return ok(
@@ -143,7 +148,11 @@ def handle(cfg: Config, msg: dict[str, Any]) -> dict[str, Any] | None:
                     "isError": False,
                 }
             )
-        except (ValueError, KeyError, FileNotFoundError, OSError) as e:
+        except KeyError as e:
+            return ok(
+                {"content": [{"type": "text", "text": f"error: missing argument {e}"}], "isError": True}
+            )
+        except Exception as e:  # noqa: BLE001 - a tool error is an answer; the server must outlive bad input
             return ok({"content": [{"type": "text", "text": f"error: {e}"}], "isError": True})
     return err(-32601, f"method not found: {method}")
 
